@@ -52,7 +52,7 @@ function legend(host, items) {
   host.innerHTML = items.map(([label, color]) => `<span><i style="background:var(${color})"></i>${esc(label)}</span>`).join('');
 }
 
-fetch('data.json').then(r => r.json()).then(init);
+Promise.all(['data.json', 'distribution.json'].map(f => fetch(f).then(r => r.json()))).then(([D, X]) => { init(D); renderDistribution(X); });
 
 function init(D) {
   const C = D.corpora;
@@ -64,7 +64,7 @@ function init(D) {
   renderDecomposition(C.core);
   renderFields(D);
   renderProse(D);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { drawAlluvial(); drawLines(); drawCoverage(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { drawAlluvial(); drawLines(); drawCoverage(); drawRank(); drawMix(); });
 }
 
 function renderHeadline(D) {
@@ -250,6 +250,145 @@ function renderCoverage(D) {
   drawCoverage();
 }
 
+let drawRank = () => {};
+let drawMix = () => {};
+const NAME_KO = { 'All OpenAlex': '전체 OpenAlex', 'Core 2000-2025': 'Core 2000–25', 'Core, China': 'Core, 중국 소속', 'Core, non-China': 'Core, 그 외', 'Core 2000-2004': 'Core 2000–04', 'Core 2020-2025': 'Core 2020–25' };
+const SYNTH_KO = { power: 'Power law', lognormal: 'Lognormal', mixture: '혼합 null' };
+const num = (x, d = 2) => (x === null || x === undefined ? '—' : x.toFixed(d));
+const pval = p => (p < 0.001 ? '<0.001' : p.toFixed(3));
+
+function renderDistribution(X) {
+  const fit = name => X.tails.find(t => t.name === name);
+  const pooled = fit('Core 2000-2025'), china = fit('Core, China'), other = fit('Core, non-China');
+  const syn = k => X.synthetic.find(s => s.kind === k);
+  const M = X.mixture;
+  const last = X.concentration.at(-1), first = X.concentration[0];
+  const terms = { cc: last.pi ** 2 * M.y_china, cross: 2 * last.pi * (1 - last.pi) * M.y_cross, oo: (1 - last.pi) ** 2 * M.y_other };
+  const termTotal = terms.cc + terms.cross + terms.oo;
+  const hillChina = X.concentration.at(-1).hill1_china, hillOther = X.concentration.at(-1).hill1_other;
+
+  $('dist-lede').innerHTML = `<strong>결론부터: 성 빈도는 exponential보다 확실히 두껍지만, power law라고 말할 근거는 없습니다.</strong> 이 표본 크기에서는 power-law 검정이 lognormal 모집단도 ${pct(syn('lognormal').reject_gof, 0)}만 기각해서, 기각되지 않았다는 사실이 거의 정보를 주지 않습니다. 대신 더 단단한 결과는 집중도 쪽에 있습니다. 두 논문의 제1저자 성이 겹칠 확률 $Y_2$의 증가는 중국 소속 비중 π 하나로 거의 재현됩니다.`.replace('$Y_2$', 'Y₂');
+  $('dist-tiles').innerHTML = [
+    [num(pooled.alpha), `Tail 지수 α`, `95% ${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)} · n=${pooled.n_authors.toLocaleString('ko-KR')}`],
+    [pct(syn('lognormal').reject_gof, 0), 'Lognormal 기각력', `합성 ${syn('lognormal').reps}회 · GOF p<0.1`],
+    [`${Math.round(1 / M.y_china)} vs ${fmt(1 / M.y_other)}`, '유효 성 개수 1/Y₂', '중국 소속 vs 그 외'],
+    [pct(M.null_fraction, 0), 'Y₂ 증가 재현', `π만 변화 · R²=${num(M.r2)}`],
+  ].map(([v, a, b]) => `<div class="tile"><span>${a}</span><b>${v}</b><small>${b}</small></div>`).join('');
+
+  // Rank-frequency on log-log axes.
+  const seriesR = [
+    { label: 'Core 2000–25', color: '--d-phys', key: 'Core 2000-2025' },
+    { label: '중국 소속', color: '--d-health', key: 'Core, China' },
+    { label: '그 외', color: '--d-life', key: 'Core, non-China' },
+  ];
+  legend($('legend-rank'), seriesR.map(s => [s.label, s.color]));
+  $('rank-text').textContent = `중국 소속 곡선은 성 ${china.n_surnames}개에서 끝나고, 그 외 곡선은 ${fmt(other.n_surnames)}개까지 이어집니다. 전체 곡선은 이 둘의 합입니다. 위쪽 ${pooled.n_tail}개 성에 맞춘 점선의 기울기는 −${num(pooled.zipf_exponent)}입니다. 낮은 빈도 구간은 표본 추출이 모양을 만드는 영역이라 해석하지 않습니다.`;
+  drawRank = () => {
+    const svg = $('rank-chart');
+    const W = 1000, H = 440, m = { t: 14, r: 96, b: 40, l: 56 };
+    svg.innerHTML = '';
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.style.minWidth = '640px';
+    const xMax = 4.2, yMax = 2.6;
+    const x = v => m.l + Math.log10(v) * (W - m.l - m.r) / xMax;
+    const y = v => H - m.b - Math.log10(v) * (H - m.t - m.b) / yMax;
+    [1, 10, 100].forEach(v => {
+      el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: css('--line'), 'stroke-width': 1 }, svg);
+      el('text', { x: m.l - 7, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = v;
+    });
+    [1, 10, 100, 1000, 10000].forEach(v => { el('text', { x: x(v), y: H - 20, 'text-anchor': 'middle' }, svg).textContent = v.toLocaleString('ko-KR'); });
+    el('text', { x: (W - m.r + m.l) / 2, y: H - 3, 'text-anchor': 'middle' }, svg).textContent = '성의 순위';
+    el('text', { x: 14, y: H / 2, 'text-anchor': 'middle', transform: `rotate(-90 14 ${H / 2})` }, svg).textContent = '표본 내 빈도';
+    seriesR.forEach(s => {
+      const c = X.curves[s.key];
+      const pts = c.rank.map((r, i) => `${x(r)},${y(c.freq[i])}`).join('L');
+      el('path', { d: `M${pts}`, fill: 'none', stroke: css(s.color), 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
+    });
+    const fitLine = [1, pooled.n_tail].map(r => `${x(r)},${y(pooled.kmin * (r / pooled.n_tail) ** (-1 / (pooled.alpha - 1)))}`).join('L');
+    el('path', { d: `M${fitLine}`, fill: 'none', stroke: css('--ink'), 'stroke-width': 1.5, 'stroke-dasharray': '6 4' }, svg);
+    seriesR.forEach((s, i) => {
+      const c = X.curves[s.key];
+      el('text', { x: x(c.rank.at(-1)), y: y(c.freq.at(-1)) - 8 - (i === 0 ? 15 : 0), 'text-anchor': 'end', class: 'strong' }, svg).textContent = s.label;
+    });
+    const hit = el('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent' }, svg);
+    hit.addEventListener('mousemove', event => {
+      const box = svg.getBoundingClientRect();
+      const px = (event.clientX - box.left) * W / box.width;
+      const rank = 10 ** ((px - m.l) * xMax / (W - m.l - m.r));
+      const lines = seriesR.map(s => {
+        const c = X.curves[s.key];
+        let i = 0;
+        c.rank.forEach((r, j) => { if (Math.abs(Math.log(r / rank)) < Math.abs(Math.log(c.rank[i] / rank))) i = j; });
+        return rank > c.rank.at(-1) * 1.2 ? `${s.label}: 범위 밖` : `${s.label}: ${c.freq[i]}회`;
+      });
+      showTip(event, `<b>순위 약 ${fmt(rank)}</b><br>${lines.join('<br>')}`);
+    });
+    hit.addEventListener('mouseleave', hideTip);
+  };
+  drawRank();
+
+  // Tail fits.
+  $('fit-text').textContent = `Discrete power-law MLE와 KS 기반 kmin 선택(Clauset et al.)을 썼고, 표본 추출이 지배하는 구간을 빼기 위해 kmin ≥ ${X.kmin_floor}로 제한했습니다. 표의 R은 Vuong 통계량으로, 양수면 power law 쪽, 음수면 대안 쪽입니다. Exponential은 모든 표본에서 밀려나고(R>0), lognormal과 stretched exponential은 어느 쪽도 구분되지 않습니다.`;
+  const rows = X.tails.map(t => {
+    if (t.alpha === null) return `<tr><td>${NAME_KO[t.name]}</td><td>${t.n_authors.toLocaleString('ko-KR')}</td><td colspan="7">빈도 ≥ ${X.kmin_floor}인 성이 50개 미만이라 적합하지 않음 (최대 빈도 ${t.k_max})</td></tr>`;
+    const a = t.alternatives;
+    return `<tr><td>${NAME_KO[t.name]}</td><td>${t.n_authors.toLocaleString('ko-KR')}</td><td>${t.kmin} (${t.n_tail})</td><td>${num(t.alpha)} (${num(t.alpha_lo)}–${num(t.alpha_hi)})</td><td>${num(t.gof_p)}</td><td>${num(a.exponential.R)} (${pval(a.exponential.p)})</td><td>${num(a.lognormal.R)} (${pval(a.lognormal.p)})</td><td>${num(a.stretched.R)} (${pval(a.stretched.p)})</td><td>${pval(a.cutoff.p)}</td></tr>`;
+  }).join('');
+  $('fit-table').innerHTML = `<thead><tr><th>표본</th><th>n</th><th>kmin (tail 성 수)</th><th>α (95%)</th><th>GOF p</th><th>R 대 exponential</th><th>R 대 lognormal</th><th>R 대 stretched</th><th>Cutoff LR p</th></tr></thead><tbody>${rows}</tbody>`;
+
+  // Synthetic validation.
+  $('synth-text').textContent = `실제 데이터에 적용하기 전에, 정답을 아는 합성 모집단에서 같은 n=${X.n_core_equal.toLocaleString('ko-KR')}으로 같은 절차를 돌렸습니다(각 ${syn('lognormal').reps}회, GOF는 회당 ${X.reps.synthetic_gof}회). Power-law 입력의 α는 복원되고 위양성도 낮아 절차 자체는 건강합니다. 문제는 검정력입니다. Lognormal이나 혼합 null도 거의 기각되지 않습니다. 혼합 null은 측정된 중국 성 빈도와, 그 외 집단의 Y₂에 맞춘 lognormal을 π=0.18로 섞은 것으로, power law가 전혀 들어 있지 않은데도 α ${num(syn('mixture').alpha_lo)}–${num(syn('mixture').alpha_hi)}로 나옵니다. 실측 ${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)}와 겹치는 값입니다.`;
+  $('synth-table').innerHTML = `<thead><tr><th>모집단</th><th>추정 α 중앙값 (95%)</th><th>Tail 성 수</th><th>GOF 기각률 (p&lt;0.1)</th><th>Lognormal 선호</th><th>Cutoff 선호</th></tr></thead><tbody>${['power', 'lognormal', 'mixture'].map(k => { const s = syn(k); return `<tr><td>${SYNTH_KO[k]}</td><td>${num(s.alpha_median)} (${num(s.alpha_lo)}–${num(s.alpha_hi)})</td><td>${fmt(s.n_tail_median)}</td><td>${pct(s.reject_gof, 0)}</td><td>${pct(s.prefers_lognormal, 0)}</td><td>${pct(s.prefers_cutoff, 0)}</td></tr>`; }).join('')}</tbody>`;
+
+  // Mixture null.
+  $('mix-text').textContent = `Y₂ = Σpₖ²는 무작위로 고른 두 논문의 제1저자 성이 같을 확률이며, 통계물리의 inverse participation ratio입니다. 모든 성이 균등하면 1/S, 한 성뿐이면 1입니다. 두 집단이 섞이면 Y₂(π) = π²Y_c + (1−π)²Y_o + 2π(1−π)Y_x 가 항등식으로 성립합니다. Y_c, Y_o, Y_x를 2000–25 전체 값(${num(M.y_china, 4)}, ${num(M.y_other, 5)}, ${num(M.y_cross, 5)})으로 고정하고 π만 바꾸면, 2000–04에서 2020–25까지의 Y₂ 증가 ${(M.observed_change * 1e3).toFixed(2)}×10⁻³ 중 ${(M.null_change * 1e3).toFixed(2)}×10⁻³(${pct(M.null_fraction, 0)})가 재현됩니다. 이 곡선에는 Y₂에 맞춰 조정한 parameter가 없습니다. 예외도 있습니다. 2000–04의 예측값은 CI 위에 있어, 초기에는 그 집단의 내부 값이 전체 평균과 달랐을 수 있습니다. 2020–25의 Y₂에서는 중국-중국 쌍이 ${pct(terms.cc / termTotal, 0)}, 교차 쌍이 ${pct(terms.cross / termTotal, 0)}, 그 외-그 외 쌍이 ${pct(terms.oo / termTotal, 0)}를 차지합니다.`;
+  legend($('legend-mix'), [['연도별 측정값', '--d-phys'], ['혼합 null', '--ink']]);
+  drawMix = () => {
+    const svg = $('mix-chart');
+    const W = 1000, H = 380, m = { t: 14, r: 24, b: 40, l: 66 };
+    svg.innerHTML = '';
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.style.minWidth = '640px';
+    const xMax = 0.36, yMax = 0.005;
+    const x = v => m.l + v * (W - m.l - m.r) / xMax;
+    const y = v => H - m.b - v * (H - m.t - m.b) / yMax;
+    for (let v = 0; v <= yMax + 1e-9; v += 0.001) {
+      el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: css('--line'), 'stroke-width': 1 }, svg);
+      el('text', { x: m.l - 7, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = v.toFixed(3);
+    }
+    [0, 0.1, 0.2, 0.3].forEach(v => { el('text', { x: x(v), y: H - 20, 'text-anchor': 'middle' }, svg).textContent = `${v * 100}%`; });
+    el('text', { x: (W - m.r + m.l) / 2, y: H - 3, 'text-anchor': 'middle' }, svg).textContent = '중국 소속 제1저자 비중 π';
+    const curve = [];
+    for (let p = 0; p <= xMax + 1e-9; p += 0.005) curve.push(`${x(p)},${y(p * p * M.y_china + (1 - p) ** 2 * M.y_other + 2 * p * (1 - p) * M.y_cross)}`);
+    el('path', { d: `M${curve.join('L')}`, fill: 'none', stroke: css('--ink'), 'stroke-width': 2 }, svg);
+    X.annual.forEach(a => {
+      const dot = el('circle', { cx: x(a.pi), cy: y(a.y2), r: 5, fill: css('--d-phys'), stroke: css('--bg'), 'stroke-width': 2 }, svg);
+      dot.addEventListener('mousemove', event => showTip(event, `<b>${a.year}</b><br>π ${pct(a.pi, 1)}<br>Y₂ ${a.y2.toFixed(5)}<br>혼합 null ${a.null.toFixed(5)}<br>n=${a.n_known}`));
+      dot.addEventListener('mouseleave', hideTip);
+    });
+  };
+  drawMix();
+  $('mix-table').innerHTML = `<thead><tr><th>기간</th><th>π</th><th>Y₂ (95% CI)</th><th>혼합 null</th><th>중국 소속 Y_c</th><th>exp(H) 중국 소속</th><th>exp(H) 그 외</th><th>Coverage 그 외</th></tr></thead><tbody>${X.concentration.map(c => `<tr><td>${c.period.replace('-', '–')}</td><td>${pct(c.pi, 1)}</td><td>${c.y2_known.toFixed(5)} (${c.y2_known_lo.toFixed(5)}–${c.y2_known_hi.toFixed(5)})</td><td>${c.null_pooled.toFixed(5)}</td><td>${c.y_china.toFixed(4)}</td><td>${Math.round(c.hill1_china)} (n=${c.n_china})</td><td>≈ ${fmt(c.hill1_other)}</td><td>${pct(c.coverage_other, 0)}</td></tr>`).join('')}</tbody>`;
+
+  // Claim audit.
+  const claims = [
+    ['성 빈도의 tail은 exponential보다 두껍다', `적합한 ${X.tails.filter(t => t.alpha !== null).length}개 표본 모두 R>0, p≤${pval(Math.max(...X.tails.filter(t => t.alpha !== null).map(t => t.alternatives.exponential.p)))}`, '보였다 (관찰)'],
+    ['Core 2000–25의 α는 약 ' + num(pooled.alpha), `95% ${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)}, n=${pooled.n_authors.toLocaleString('ko-KR')}. 서술량이며 scale-free의 증거가 아님`, '측정값으로만 보고'],
+    ['성 빈도는 power law다', `GOF 기각 안 됨, 그러나 lognormal 기각력 ${pct(syn('lognormal').reject_gof, 0)}`, '주장 불가. "구분되지 않는다"까지'],
+    ['Y₂ 증가는 π 변화와 부합한다', `null 재현 ${pct(M.null_fraction, 0)}, R²=${num(M.r2)}, 5개 기간 중 ${M.periods_null_inside_ci}개가 CI 안`, '시사한다 (함의). 인과 아님'],
+    ['중국 소속 집단의 성 다양성은 그 외보다 두 자릿수 작다', `1/Y₂ 약 ${Math.round(1 / M.y_china)} 대 ${fmt(1 / M.y_other)}. exp(H)는 약 ${Math.round(hillChina)} 대 ${fmt(hillOther)}이지만 그 외의 coverage가 ${pct(last.coverage_other, 0)}라 이 값은 불확실`, '보였다 (1/Y₂ 기준)'],
+    ['차이의 기원은 새 성의 출현율이다', 'Baek et al.이 나라별 분포 차이에 대해 제시한 가설. 이 데이터로는 검정하지 않음', '추측. 출처 명시'],
+  ];
+  $('claim-table').innerHTML = `<thead><tr><th>주장</th><th>현재 근거</th><th>허용되는 최대 강도</th></tr></thead><tbody>${claims.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  $('banned').innerHTML = '<strong>쓰면 안 되는 문장:</strong> "저자 성 분포는 scale-free다", "Zhang이 늘어난 원인은 …이다", "응축(condensation) 상전이가 일어났다". 앞의 둘은 이 데이터가 뒷받침하지 않고, 마지막은 시스템 크기에 대한 scaling을 재지 않았으므로 근거가 없습니다.';
+  const life = [
+    ['kmin 제한 없음, n≈4,300–15,000', 'α ≈ 3.2–3.6, 일부 표본은 kmin=1 선택', '재표본마다 α가 약 2.2와 약 3.5로 갈림', '철회. k=1 부근의 표본 추출 artifact'],
+    ['복원 bootstrap', '2000–04 Y₂ CI 0.00051–0.00062', '점추정치 0.00035가 CI 밖', '교체. 중복 논문이 같은 성 쌍으로 세어짐. half-sample로 변경'],
+    ['2000–04 값을 기준으로 고정, 중국 n=146', 'π가 Y₂ 증가의 67%를 설명', '2000–04의 중국 표본이 너무 작음', '교체. 전 기간 pooled 값 사용 후 ' + pct(M.null_fraction, 0)],
+  ];
+  $('life-table').innerHTML = `<thead><tr><th>시점</th><th>잠정 진술</th><th>확인 결과</th><th>처분</th></tr></thead><tbody>${life.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
 const annual = x => `${(100 * (Math.exp(x) - 1)).toFixed(1)}%`;
 function renderTrendTable(core) {
   const rows = core.trends.map(t => {
@@ -336,7 +475,8 @@ function renderProse(D) {
     <li><strong>로마자 표기.</strong> 張의 Chang·Cheung, 王의 Wong처럼 다른 표기는 포함하지 않았습니다. 이들을 더해도 core 2020–25에서 Zhang은 약 ${pp(core.aliases[0].alias_share)} 늘어나는 정도입니다. 반대로 한국의 Chang이나 동남아의 Tan은 다른 성일 수 있어 합치지 않았습니다.</li>
     <li><strong>이름 parsing.</strong> "Zhang Wei"처럼 성이 앞에 오는 표기는 병음이고 소속이 중화권이거나 없을 때만 성으로 읽었습니다. 소속 미상 논문이 많은 초기 연도는 오차가 더 클 수 있습니다. 한자 표기는 첫 글자로 판단했습니다.</li>
     <li><strong>분류와 수록 범위.</strong> Field는 OpenAlex topic을 Scopus ASJC에 대응시킨 것으로, 제목·초록·저널명으로 분류한 결과입니다<sup><a href="#r2">2</a></sup>. OpenAlex의 수록 범위 자체도 데이터베이스마다 다르며<sup><a href="#r3">3</a></sup>, core는 주요 저널에 치우친 모집단입니다.</li>
-    <li><strong>재현.</strong> <code>scripts/surname_share_collect.py</code>, <code>scripts/surname_share_analyze.py</code>. 2026-10-31 기준 데이터입니다.</li></ul>`;
+    <li><strong>분포 분석의 표본.</strong> Power-law 적합에는 정수 빈도가 필요해서 rejection으로 등확률 부분표본을 만들었습니다. 그래서 n이 줄어듭니다(core 2000–25 약 15,600건). 라틴 문자 성만 쓰고 한자·가나·기타 문자 표기와 비인명 토큰은 제외했으며, 제외 행은 사유와 함께 저장했습니다. 병음은 章과 張처럼 다른 한자를 하나로 합치므로 중국 성의 다양성을 낮춰 잽니다.</li>
+    <li><strong>재현.</strong> <code>scripts/surname_share_collect.py</code>, <code>scripts/surname_share_analyze.py</code>, <code>scripts/surname_share_distribution.py</code>. 2026-10-31 기준 데이터입니다.</li></ul>`;
   $('refs').innerHTML = REFS.map((r, i) => `<li id="r${i + 1}">${r}</li>`).join('');
 }
 
@@ -348,4 +488,12 @@ const REFS = [
   'Harzing, A.-W. (2015). Health warning: might contain multiple personalities—the problem of homonyms in Thomson Reuters Essential Science Indicators. <em>Scientometrics</em>, 105(3), 2259–2270. <a href="https://doi.org/10.1007/s11192-015-1699-y">doi:10.1007/s11192-015-1699-y</a>',
   'Kim, J., &amp; Diesner, J. (2016). Distortive effects of initial-based name disambiguation on measurements of large-scale coauthorship networks. <em>Journal of the Association for Information Science and Technology</em>, 67(6), 1446–1461. <a href="https://doi.org/10.1002/asi.23489">doi:10.1002/asi.23489</a>',
   '邵克 (2021-02-08). 公安部公布2020年百家姓排名：王李张刘陈依旧名列前五. 澎湃新闻. 《二〇二〇年全国姓名报告》 인용. <a href="https://www.thepaper.cn/newsDetail_forward_11269566">thepaper.cn</a>',
+  'Clauset, A., Shalizi, C. R., &amp; Newman, M. E. J. (2009). Power-law distributions in empirical data. <em>SIAM Review</em>, 51(4), 661–703. <a href="https://doi.org/10.1137/070710111">doi:10.1137/070710111</a>',
+  'Vuong, Q. H. (1989). Likelihood ratio tests for model selection and non-nested hypotheses. <em>Econometrica</em>, 57(2), 307–333. <a href="https://doi.org/10.2307/1912557">doi:10.2307/1912557</a>',
+  'Baek, S. K., Kiet, H. A. T., &amp; Kim, B. J. (2007). Family name distributions: Master equation approach. <em>Physical Review E</em>, 76(4), 046113. <a href="https://doi.org/10.1103/PhysRevE.76.046113">doi:10.1103/PhysRevE.76.046113</a>',
+  'Zanette, D. H., &amp; Manrubia, S. C. (2001). Vertical transmission of culture and the distribution of family names. <em>Physica A</em>, 295(1–2), 1–8. <a href="https://doi.org/10.1016/S0378-4371(01)00046-2">doi:10.1016/S0378-4371(01)00046-2</a>',
+  'Kim, B. J., &amp; Park, S. M. (2005). Distribution of Korean family names. <em>Physica A</em>, 347, 683–694. <a href="https://doi.org/10.1016/j.physa.2004.08.028">doi:10.1016/j.physa.2004.08.028</a>',
+  'Stumpf, M. P. H., Wiuf, C., &amp; May, R. M. (2005). Subnets of scale-free networks are not scale-free: Sampling properties of networks. <em>PNAS</em>, 102(12), 4221–4224. <a href="https://doi.org/10.1073/pnas.0501179102">doi:10.1073/pnas.0501179102</a>',
+  'Chao, A., &amp; Shen, T.-J. (2003). Nonparametric estimation of Shannon’s index of diversity when there are unseen species in sample. <em>Environmental and Ecological Statistics</em>, 10, 429–443. <a href="https://doi.org/10.1023/A:1026096204727">doi:10.1023/A:1026096204727</a>',
+  'Hill, M. O. (1973). Diversity and evenness: A unifying notation and its consequences. <em>Ecology</em>, 54(2), 427–432. <a href="https://doi.org/10.2307/1934352">doi:10.2307/1934352</a>',
 ];

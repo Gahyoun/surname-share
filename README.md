@@ -7,6 +7,7 @@ The page is in `docs/`. To regenerate its data:
 ```bash
 OPENALEX_MAILTO=you@example.org python scripts/surname_share_collect.py
 python scripts/surname_share_analyze.py
+python scripts/surname_share_distribution.py
 ```
 
-The analysis needs `numpy` and `pandas`. Raw samples are written to `data/`, which is not committed. Results are a snapshot from 2026-10-31.
+The analysis needs `numpy`, `pandas` and `scipy`. Raw samples are written to `data/`, which is not committed. Results are a snapshot from 2026-10-31.

@@ -61,6 +61,8 @@ th { color: var(--ink-2); font-weight: 600; }
 th button { all: unset; cursor: pointer; }
 .wrap { overflow-x: auto; }
 tr.thin td { color: var(--ink-3); }
+h3 { font-size: 17px; margin: 32px 0 6px; }
+table.wrapcells td, table.wrapcells th { white-space: normal; text-align: left; vertical-align: top; }
 code { font-size: 0.92em; }
 ol.refs { padding-left: 22px; font-size: 14px; color: var(--ink-2); max-width: 78ch; }
 ol.refs li { margin-bottom: 8px; }
@@ -109,6 +111,31 @@ sup a { text-decoration: none; }
   <div class="controls"><div class="seg" id="seg-field-corpus" role="group" aria-label="모집단 선택"></div>
     <div class="seg" id="seg-period" role="group" aria-label="기간 선택"></div></div>
   <div class="wrap"><table id="field-table"></table></div>
+
+  <h2>분포로 보면: power law인가</h2>
+  <p id="dist-lede"></p>
+  <div class="tiles" id="dist-tiles"></div>
+  <h3>Rank–frequency</h3>
+  <p id="rank-text"></p>
+  <div class="legend" id="legend-rank"></div>
+  <div class="chart"><svg id="rank-chart" role="img" aria-label="성의 순위와 빈도를 나타낸 log-log 그래프. 수치는 아래 표에 있습니다."></svg></div>
+  <h3>Tail 적합과 대안 분포</h3>
+  <p id="fit-text"></p>
+  <div class="wrap"><table id="fit-table"></table></div>
+  <h3>이 검정에 그럴 힘이 있는가</h3>
+  <p id="synth-text"></p>
+  <div class="wrap"><table id="synth-table"></table></div>
+  <h3>겹칠 확률과 혼합 null</h3>
+  <p id="mix-text"></p>
+  <div class="legend" id="legend-mix"></div>
+  <div class="chart"><svg id="mix-chart" role="img" aria-label="중국 소속 비중에 따른 연도별 inverse participation ratio와 혼합 null 곡선"></svg></div>
+  <div class="wrap"><table id="mix-table"></table></div>
+  <h3>어디까지 말할 수 있나</h3>
+  <p class="note">표본 크기 n을 바꾸면 이 표를 다시 돌립니다.</p>
+  <div class="wrap"><table id="claim-table" class="wrapcells"></table></div>
+  <p id="banned"></p>
+  <h3>철회하거나 바꾼 잠정 진술</h3>
+  <div class="wrap"><table id="life-table" class="wrapcells"></table></div>
 
   <h2>방법과 한계</h2>
   <div id="method"></div>
