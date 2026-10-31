@@ -297,7 +297,7 @@ def s20_data_science(growth, cell, seed=SEED + 1):
 
 
 def s21_surnames():
-    frame = pd.read_csv(OUT / "S13_parsed_snapshots.csv", keep_default_na=False, dtype={"work_id": str})
+    frame = dist.clean(pd.read_csv(OUT / "S13_parsed_snapshots.csv", keep_default_na=False, dtype={"work_id": str}), "fields_snapshots")
     exact = pd.read_csv(OUT / "S1b_exact_series.csv").set_index("year")
     first, last = int(frame.snapshot.min()), int(frame.snapshot.max())
     growth_all = float(exact.core_all[last] / exact.core_all[first])

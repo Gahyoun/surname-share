@@ -255,6 +255,7 @@ let drawMix = () => {};
 const NAME_KO = { 'All OpenAlex': '전체 OpenAlex', 'Core 2000-2025': 'Core 2000–25', 'Core, China': 'Core, 중국 소속', 'Core, non-China': 'Core, 그 외', 'Core 2000-2004': 'Core 2000–04', 'Core 2020-2025': 'Core 2020–25' };
 const SYNTH_KO = { power: 'Power law', lognormal: 'Lognormal', mixture: '혼합 null' };
 const num = (x, d = 2) => (x === null || x === undefined ? '—' : x.toFixed(d));
+const pv = p => (p < 0.001 ? 'p<0.001' : `p=${p.toFixed(3)}`);
 const pval = p => (p < 0.001 ? '<0.001' : p.toFixed(3));
 
 function renderDistribution(X, R, F, C) {
@@ -457,7 +458,7 @@ function renderProse(D) {
     <li><strong>학문 분류 체계와 수록 범위.</strong> 학문 분야(field)는 OpenAlex의 primary topic을 Scopus ASJC 분류 체계에 매핑한 것으로, 논문의 제목·초록·인용 정보·저널명을 종합해 알고리즘으로 분류한 결과입니다<sup><a href="#r2">2</a></sup>. 서지 데이터베이스마다 수록 범위(coverage)가 상이하며<sup><a href="#r3">3</a></sup>, 본 페이지의 시계열 기준인 CWTS core sources는 국제 주요 학술지에 집중된 부분집합입니다.</li>
     <li><strong>성씨 분포 분석을 위한 등확률 부분표본.</strong> 이산형 power-law 적합에는 가중치가 없는 정수 빈도(integer counts)가 필요하므로, 층화 표본에 rejection sampling을 적용해 추출 확률이 동일한 부분표본(equal-probability subsample)을 구성했습니다(이에 따라 core 2000–25년 기준 유효 표본 크기는 약 15,600건이 됩니다). 라틴 문자 성씨만 분석에 포함하고 한자·가나·기타 문자 표기 및 비인명 토큰은 제외했으며, 제외된 레코드는 사유와 함께 별도 기록했습니다. 한편 로마자 병음 표기는 章(Zhang)과 張(Zhang)처럼 서로 다른 한자 성씨를 하나의 철자로 병합하므로, 실제 한자 성씨 기준보다 다양성을 낮게(집중도 Y₂는 높게) 측정하는 경향이 있습니다.</li>
     <li><strong>분야별 초과 증가율 분석의 표본과 통계 처리.</strong> Field 및 subfield×5년 셀마다 core sources에서 최대 600건을 무작위 추출했습니다. 초과 증가율 E의 95% CI는 두 기간 비중 비(ratio)에 대한 delta method(0건 셀 처리를 위한 Haldane 보정 포함)로 구했고, 다중비교에 따른 위양성 통제는 26개 field에 대해 Benjamini–Hochberg FDR 절차를 적용했습니다. 연도별 전체 논문 수와 중국 소속 저자 포함 논문 수는 표본 추정이 아닌 OpenAlex 전수 집계(exact count)입니다. 2000–04년 구간은 제1저자 소속 미상 비율이 높고 성씨별 비교가 라틴 문자 표기에 한정되므로 초기 추정치의 불확실성이 상대적으로 큽니다.</li>
-    <li><strong>재현성(reproducibility).</strong> 데이터 수집과 분석 전 과정은 <code>scripts/surname_share_collect.py</code>, <code>scripts/surname_share_analyze.py</code>, <code>scripts/surname_share_distribution.py</code>, <code>scripts/surname_share_retest.py</code>, <code>scripts/surname_share_fields.py</code>로 재현할 수 있습니다. 2026-10-31 기준 OpenAlex 스냅샷을 사용했습니다.</li></ul>`;
+    <li><strong>재현성(reproducibility).</strong> 데이터 수집과 분석 전 과정은 <code>scripts/surname_share_collect.py</code>, <code>scripts/surname_share_analyze.py</code>, <code>scripts/surname_share_distribution.py</code>, <code>scripts/surname_share_retest.py</code>, <code>scripts/surname_share_fields.py</code>, <code>scripts/surname_share_common.py</code>로 재현할 수 있습니다. 2026-10-31 기준 OpenAlex 스냅샷을 사용했습니다.</li></ul>`;
   $('refs').innerHTML = REFS.map((r, i) => `<li id="r${i + 1}">${r}</li>`).join('');
 }
 

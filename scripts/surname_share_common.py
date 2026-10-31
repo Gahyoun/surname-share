@@ -3,11 +3,15 @@
 The sets are chosen on one sample and measured on others: rank surnames among
 China-affiliated first authors in the pooled core sample (S2d), then measure growth on
 the yearly snapshots (S2c) and the field sample (S2e). The overlap is a few dozen works.
-Other surname groups serve as placebo and comparison.
+That removes selection on sampling noise, but the pooled sample leans recent, so surnames
+that really grew are favoured. Two lists avoid this: the top five of the national household
+register, which match the data's top five, and a ranking from 2000-2009 papers only.
+Other surname groups serve as comparison; shares sum to one, so they are not a clean placebo.
 
 S23: define the surname sets.
 S24: share and excess growth E by set, overall and among first authors outside China.
-S25: E by field for the primary set, heterogeneity, composition null.
+S25: E and odds ratio by field for the primary set, heterogeneity, composition null,
+     and a split-half test of E against the early share, which share sampling noise.
 S26: write docs/surname-share/common.json for the page.
 
 Usage: python scripts/surname_share_common.py
@@ -34,6 +38,10 @@ KOREAN = ["Kim", "Lee", "Park", "Choi", "Jung", "Kang", "Cho", "Yoon"]
 INDIAN = ["Kumar", "Singh", "Sharma", "Gupta", "Patel", "Das", "Reddy", "Verma"]
 VARIANTS = ["Chang", "Cheung", "Chan", "Wong", "Ong", "Teo", "Kuo", "Kwok", "Liou", "Lau", "Hsu", "Tsai", "Hsieh", "Chiu", "Yeh", "Chou", "Chu", "Hung", "Lai", "Ho"]
 SPECIFIC = 0.75
+EARLY_END = 2009
+EARLY_SIZE = 20
+N_SPLIT = 2000
+SEED = 20261103
 
 
 def read_flags(name):
@@ -58,6 +66,8 @@ def s23_sets():
     specific = specific[specific.china / (specific.china + specific.other) >= SPECIFIC].index.tolist()
     groups["상위 100 중 특이도 높은 성"] = specific
     groups["상위 100 + 표기 변형"] = top[PRIMARY] + [s for s in VARIANTS if s not in top[PRIMARY]]
+    early = china[china.year.astype(int) <= EARLY_END].surname.value_counts()
+    groups[f"2000–09 기준 상위 {EARLY_SIZE}"] = list(early.index[:EARLY_SIZE])
     groups["트윗 다섯 성"] = TWEET
     groups["한국계 8개"] = KOREAN
     groups["인도계 8개"] = INDIAN
@@ -67,6 +77,7 @@ def s23_sets():
     dist.step("S23_surname_sets", len(table), 300, path)
     within = {"s_china": float(china.surname.isin(top[PRIMARY]).mean()), "s_other": float(other.surname.isin(top[PRIMARY]).mean()), "n_china": len(china), "n_other": len(other)}
     coverage = {k: float(table.cumulative.iloc[k - 1]) for k in SIZES}
+    within["n_early"] = int(early.sum())
     return groups, top, table, within, coverage
 
 
@@ -103,11 +114,11 @@ def s24_overall(groups):
     path = OUT / "S24_common_growth.csv"
     frame.to_csv(path, index=False)
     dist.step("S24_common_growth", len(snapshots), len(frame), path)
-    return {"first": first, "last": last, "growth_all": growth_all, "rows": rows, "series": series}
+    return {"first": first, "last": last, "growth_all": growth_all, "unknown_first": float(1 - a.known.mean()), "rows": rows, "series": series}
 
 
 def surname_rows(top, table):
-    snapshots = read_flags("S13_parsed_snapshots.csv")
+    snapshots = dist.clean(read_flags("S13_parsed_snapshots.csv"), "common_surnames")
     a, b = snapshots[snapshots.snapshot == snapshots.snapshot.min()], snapshots[snapshots.snapshot == snapshots.snapshot.max()]
     rows = []
     for surname in top[20]:
@@ -115,6 +126,36 @@ def surname_rows(top, table):
         e, lo, hi = ratio(h1, len(a), h2, len(b))
         rows.append({"surname": surname, "rank": int(table.loc[surname, "rank"]), "hits_first": h1, "hits_last": h2, "e": e, "lo": lo, "hi": hi})
     return rows
+
+
+def log_odds_ratio(h1, n1, h2, n2):
+    h1, h2 = h1 + 0.5, h2 + 0.5
+    m1, m2 = n1 - h1 + 1, n2 - h2 + 1
+    return np.log(h2 * m1 / (m2 * h1)), 1 / h1 + 1 / m1 + 1 / h2 + 1 / m2
+
+
+def q_statistic(values, variances):
+    weights = 1 / variances
+    centre = (weights * values).sum() / weights.sum()
+    q = float((weights * (values - centre) ** 2).sum())
+    return q, max(0.0, (q - (len(values) - 1)) / q), float(stats.chi2.sf(q, len(values) - 1))
+
+
+def split_half(table, seed=SEED):
+    """Rank E against an early share taken from the other half of the early records."""
+    rng = np.random.default_rng(seed)
+    h1, n1 = table.hits_early.values, table.n_early.values
+    half = n1 // 2
+    rho, rho_or = [], []
+    for _ in range(N_SPLIT):
+        part = rng.hypergeometric(h1, n1 - h1, half)
+        rest, rest_n = h1 - part, n1 - half
+        e = (table.hits_late.values + 0.5) / (table.n_late.values + 1) / ((rest + 0.5) / (rest_n + 1))
+        ratio_odds, _ = log_odds_ratio(rest, rest_n, table.hits_late.values, table.n_late.values)
+        rho.append(stats.spearmanr(part / half, e).statistic)
+        rho_or.append(stats.spearmanr(part / half, ratio_odds).statistic)
+    return {"split_rho": float(np.median(rho)), "split_lo": float(np.percentile(rho, 2.5)), "split_hi": float(np.percentile(rho, 97.5)),
+            "split_rho_or": float(np.median(rho_or)), "split_or_lo": float(np.percentile(rho_or, 2.5)), "split_or_hi": float(np.percentile(rho_or, 97.5))}
 
 
 def s25_fields(names, within):
@@ -134,6 +175,7 @@ def s25_fields(names, within):
         rows.append({"level": level, "name": name, "growth_all": float(q.per_year / p.per_year), "share_early": float(p.share), "share_late": float(q.share),
                      "hits_early": int(p.hits), "hits_late": int(q.hits), "log_e": float(value), "var": float(variance), "e": float(np.exp(value)),
                      "lo": float(np.exp(value - Z * np.sqrt(variance))), "hi": float(np.exp(value + Z * np.sqrt(variance))), "growth_group": float(np.exp(value) * q.per_year / p.per_year),
+                     "n_early": int(p.n), "n_late": int(q.n), "log_or": float(log_odds_ratio(p.hits, p.n, q.hits, q.n)[0]), "var_or": float(log_odds_ratio(p.hits, p.n, q.hits, q.n)[1]),
                      "pi_early": float(pi_early), "pi_late": float(pi_late), "e_null": float(mean_share(pi_late) / mean_share(pi_early))})
     growth = pd.DataFrame(rows)
     table = growth[growth.level == "field"]
@@ -151,6 +193,8 @@ def s25_fields(names, within):
               "null_inside": int((z.abs() <= Z).sum()), "ratio_median": float(np.median(table.e / table.e_null)), "chi2_p": float(stats.chi2.sf((z ** 2).sum(), len(table))),
               "growth_rho": float(stats.spearmanr(table.growth_all, table.e).statistic), "growth_p": float(stats.spearmanr(table.growth_all, table.e).pvalue),
               "early_rho": float(stats.spearmanr(table.share_early, table.e).statistic), "early_p": float(stats.spearmanr(table.share_early, table.e).pvalue)}
+    q_or, i2_or, p_or = q_statistic(table.log_or, table.var_or)
+    hetero.update(q_or=q_or, i2_or=i2_or, p_or=p_or, or_median=float(np.exp(table.log_or.median())), **split_half(table))
     ml = cell[cell.name.isin(fields.ML)].assign(mass=lambda t: t.share * t.per_year).groupby("period").agg(mass=("mass", "sum"), per_year=("per_year", "sum"), hits=("hits", "sum"), n=("n", "sum"))
     value, variance = fields.log_ratio(ml.hits[fields.EARLY], ml.n[fields.EARLY], ml.hits[fields.LATE], ml.n[fields.LATE])
     point = float((ml.mass[fields.LATE] / ml.per_year[fields.LATE]) / (ml.mass[fields.EARLY] / ml.per_year[fields.EARLY]))
