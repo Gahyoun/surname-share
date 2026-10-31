@@ -3,7 +3,7 @@
 S1: exact article counts by field x period (the stratum sizes).
 S2: a seeded uniform sample per stratum, one row per work with its first author.
 
-Output goes to Data/surname_share/. Each API response is cached, so a rerun
+Output goes to data/. Each API response is cached, so a rerun
 resumes where the last one stopped (the anonymous budget is 1000 calls a day).
 
 Usage: OPENALEX_MAILTO=you@example.org python scripts/surname_share_collect.py

@@ -6,7 +6,9 @@ The page is in `docs/`. To regenerate its data:
 
 ```bash
 OPENALEX_MAILTO=you@example.org python scripts/surname_share_collect.py
-OPENALEX_MAILTO=you@example.org python scripts/surname_share_collect.py --snapshots --pooled --fields
+OPENALEX_MAILTO=you@example.org python scripts/surname_share_collect.py --snapshots
+OPENALEX_MAILTO=you@example.org python scripts/surname_share_collect.py --pooled
+OPENALEX_MAILTO=you@example.org python scripts/surname_share_collect.py --fields
 python scripts/surname_share_analyze.py
 python scripts/surname_share_distribution.py
 python scripts/surname_share_retest.py
