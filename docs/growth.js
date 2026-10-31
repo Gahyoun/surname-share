@@ -32,7 +32,7 @@ function renderGrowth(F) {
     [times(cs.growth_five, 0), 'Computer Science', `전체 ${times(cs.growth_all)}, E ${cs.e.toFixed(1)} (${cs.e_lo.toFixed(1)}–${cs.e_hi.toFixed(1)})`],
   ].map(([v, a, b], i) => `<div class="tile" style="--tile:var(${['--viz-phys', '--viz-chen', '--viz-wang', '--viz-zhang'][i]})"><span>${a}</span><b>${v}</b><small>${b}</small></div>`).join('');
 
-  $('growth-def').textContent = `개념: 어떤 성의 논문이 그 분야 전체보다 몇 배 빨리 늘었는가. 형식화: 기간 평균 연간 논문 수의 비 G = N(2020–25)/N(2000–04)을 성과 분야 전체에서 각각 구하면, 초과 증가율 E = G_성 / G_전체 이고 이는 제1저자 비중의 비 s(2020–25)/s(2000–04)와 같습니다. 극한: E = 1은 분야와 같은 속도, E < 1은 뒤처짐입니다. 초기 비중 s가 작으면 hit 한두 건에 E가 크게 움직이므로, 작은 분야의 큰 E는 그대로 읽지 않습니다. Null은 둘입니다. 첫째는 E = 1입니다. 둘째는 구성 null로, 전 분야 공통의 집단 내 비중(중국 소속 ${pp1(C.s_china)}, 그 외 ${pp1(C.s_other)})을 고정하고 각 field의 중국 소속 제1저자 비중 π만 바꿉니다. 이 null에는 field 표본에 맞춘 parameter가 없습니다.`;
+  $('growth-def').textContent = `어떤 성의 논문이 그 분야 전체보다 몇 배 빨리 늘었는지를 초과 증가율 E로 잽니다. 2000–04년에서 2020–25년 사이 연간 논문 수가 몇 배가 됐는지를 성과 분야 전체에서 각각 구해 나눈 값(E = G_성 / G_전체)이고, 결국 제1저자 비중이 몇 배가 됐는지와 같습니다. E가 1이면 분야와 같은 속도로 늘었다는 뜻이고, 1보다 작으면 뒤처졌다는 뜻입니다. 초기 비중이 작은 분야는 hit 한두 건에도 E가 크게 흔들리므로 큰 값을 그대로 믿으면 안 됩니다. 비교 기준은 두 가지입니다. 하나는 E = 1이고, 다른 하나는 구성 null입니다. 구성 null은 다섯 성의 비중을 모든 분야에서 중국 소속 ${pp1(C.s_china)}, 그 외 ${pp1(C.s_other)}로 고정하고 각 field의 중국 소속 제1저자 비중 π만 바꿔 계산한 값으로, field 표본에 맞춘 parameter가 없습니다.`;
 
   // Index chart from the self-weighted snapshots.
   const indexSeries = [
@@ -47,7 +47,7 @@ function renderGrowth(F) {
     rows: F.surnames.series.map(r => ({ year: r.year, share: s.key ? r.index_all * r[s.key] / F.surnames.series[0][s.key] : r.index_all })),
   }));
   const counts = F.surnames.series.map(r => r.n);
-  $('index-text').textContent = `연도별 core 표본(연 ${ko(Math.min(...counts))}–${ko(Math.max(...counts))}건, 같은 확률로 추출)에서 비중을 구하고, 전체 논문의 exact count를 곱해 2000년을 1로 둔 지수입니다. 5년 간격 6개 시점입니다. Guo는 2000년 hit이 ${F.surnames.rows.find(r => r.surname === 'Guo').hits_first}건뿐이라 그림에서 빼고 표에만 두었습니다. 트윗 목록에는 없지만 비교를 위해 Li를 표에 넣었습니다. Li의 E는 ${li.e.toFixed(1)}(${li.e_lo.toFixed(1)}–${li.e_hi.toFixed(1)})로 Zhang의 ${zhang.e.toFixed(1)}(${zhang.e_lo.toFixed(1)}–${zhang.e_hi.toFixed(1)})과 겹칩니다.`;
+  $('index-text').textContent = `연도별 core 표본(연 ${ko(Math.min(...counts))}–${ko(Math.max(...counts))}건)에서 구한 비중에 전체 논문의 exact count를 곱하고, 2000년을 1로 맞춘 지수입니다. 5년 간격으로 6개 시점을 쟀습니다. Guo는 2000년 hit이 ${F.surnames.rows.find(r => r.surname === 'Guo').hits_first}건뿐이라 그림에서 빼고 표에만 실었습니다. 표의 Li는 트윗 목록에 없지만 비교용으로 넣었는데, E가 ${li.e.toFixed(1)}(${li.e_lo.toFixed(1)}–${li.e_hi.toFixed(1)})로 Zhang의 ${zhang.e.toFixed(1)}(${zhang.e_lo.toFixed(1)}–${zhang.e_hi.toFixed(1)})과 겹칩니다.`;
   legend($('legend-index'), indexSeries.map(s => [s.label, s.color]));
   drawIndex = () => lineChart($('index-chart'), {
     series: indexSeries, H: 400, tick: 5, format: v => `×${v}`,
@@ -61,7 +61,7 @@ function renderGrowth(F) {
 
   // Forest plot.
   const top = sorted[0], low = sorted.at(-1);
-  $('forest-text').innerHTML = `각 field·period 셀은 무작위 600건이고, E는 2000–04와 2020–25의 비중 비입니다. ML은 OpenAlex에 분류가 없어 subfield Artificial Intelligence(1702)와 Computer Vision and Pattern Recognition(1707)의 합으로 근사했습니다. 네 subfield는 Computer Science의 부분집합이라 field와 독립이 아니며, 다중비교 보정과 동질성 검정에서 뺐습니다. Field 사이의 이질성은 Q=${H.Q.toFixed(1)}(df ${H.df}, p=${pval(H.p)}), I²=${pp1(H.I2, 0)}, τ=${H.tau.toFixed(2)}입니다. Random-effects 평균 E는 ${H.mean_e.toFixed(1)}(${H.mean_e_lo.toFixed(1)}–${H.mean_e_hi.toFixed(1)})입니다. 원시값은 ${esc(top.name)}이 ${top.e.toFixed(1)}로 가장 크고 ${esc(low.name)}이 ${low.e.toFixed(1)}로 가장 작지만, 상단의 큰 값들은 2000–04년 hit가 적은 분야입니다(${esc(top.name)} ${top.hits_early}건). τ가 0에 가까워 empirical Bayes 값은 거의 전부 ${H.mean_e.toFixed(1)} 근처로 모입니다. 이것은 field 차이가 없다는 증거가 아니라, 셀당 600건으로는 차이를 구분할 수 없다는 뜻입니다. ML 근사의 E는 ${ml.e.toFixed(2)}(${ml.e_lo.toFixed(2)}–${ml.e_hi.toFixed(2)})로 평균과 겹치고, 2000–04년 비중이 이미 ${pp1(ml.share_early)}로 높았습니다. 세로 실선은 field 평균, 빈 마름모는 구성 null의 예측입니다. 마름모는 field 수준에만 있습니다.`;
+  $('forest-text').innerHTML = `field·기간마다 600건을 무작위로 뽑아 2000–04년과 2020–25년의 비중을 비교했습니다. OpenAlex에는 ML 분류가 없어 subfield Artificial Intelligence(1702)와 Computer Vision and Pattern Recognition(1707)을 합쳐 근사했습니다. 네 subfield는 Computer Science의 일부라서 다중비교 보정과 동질성 검정에서는 뺐습니다. Field 간 차이는 크지 않습니다(Q=${H.Q.toFixed(1)}, df ${H.df}, p=${pval(H.p)}, I²=${pp1(H.I2, 0)}, τ=${H.tau.toFixed(2)}). Random-effects 평균 E는 ${H.mean_e.toFixed(1)}(${H.mean_e_lo.toFixed(1)}–${H.mean_e_hi.toFixed(1)})입니다. 원시값으로는 ${esc(top.name)}이 ${top.e.toFixed(1)}로 가장 크고 ${esc(low.name)}이 ${low.e.toFixed(1)}로 가장 작지만, 상위권은 2000–04년 hit가 적은 분야입니다(${esc(top.name)} ${top.hits_early}건). τ가 0에 가까워 empirical Bayes로 줄이면 거의 모든 값이 ${H.mean_e.toFixed(1)} 근처로 모입니다. 그렇다고 field 차이가 없다는 뜻은 아니고, 셀당 600건으로는 가려낼 수 없다는 뜻입니다. ML 근사의 E는 ${ml.e.toFixed(2)}(${ml.e_lo.toFixed(2)}–${ml.e_hi.toFixed(2)})로 평균과 겹치며, 2000–04년 비중이 이미 ${pp1(ml.share_early)}로 높았습니다. 그림의 세로 실선은 field 평균이고, 빈 마름모는 구성 null의 예측입니다(field 수준에만 표시).`;
   const state = { level: 'field', kind: 'raw' };
   const svg = $('forest');
   drawForest = () => {
@@ -107,9 +107,9 @@ function renderGrowth(F) {
   $('growth-table').innerHTML = `<thead><tr><th scope="col">분야</th><th scope="col">전체 증가</th><th scope="col">다섯 성 증가</th><th scope="col">비중 변화</th><th scope="col">E (95% CI)</th><th scope="col">EB E</th><th scope="col">구성 null</th><th scope="col">FDR q</th><th scope="col">중국 포함 2020–25</th></tr></thead><tbody>${sorted.map(row).join('')}${subs.map(row).join('')}</tbody>`;
 
   // Scaling and collapse.
-  $('scaling-text').textContent = `시스템 크기에 대한 scaling을 보면 시간과 공간이 다른 답을 줍니다. 같은 field 안에서 기간이 지날 때 log(다섯 성 논문)을 log(분야 논문)에 회귀한 within 지수는 β=${S.beta.toFixed(2)}(field 재추출 95% ${S.lo.toFixed(2)}–${S.hi.toFixed(2)})로 1보다 큽니다. 반면 2020–25년 한 시점에서 field를 가로지른 지수는 β=${S.between_beta.toFixed(2)}(SE ${S.between_se.toFixed(2)})로 1과 구분되지 않습니다. 큰 분야일수록 이 성들이 많다면 두 지수가 같아야 합니다. 두 값이 다르므로 초선형은 크기의 성질로 읽을 수 없고, 분야 크기와 함께 시간이 움직인 결과로 읽는 쪽이 자연스럽습니다. 여기서 β는 서술량이며 대도시 scaling 같은 법칙이 아닙니다.`;
+  $('scaling-text').textContent = `분야 크기에 대한 scaling은 시간과 공간에서 다른 값을 보입니다. 같은 field 안에서 시간이 지나는 동안의 지수는 β=${S.beta.toFixed(2)}(field 재추출 95% ${S.lo.toFixed(2)}–${S.hi.toFixed(2)})로 1보다 크지만, 2020–25년 한 시점에서 field를 가로지른 지수는 β=${S.between_beta.toFixed(2)}(SE ${S.between_se.toFixed(2)})로 1과 구분되지 않습니다. 큰 분야일수록 이 성들이 많은 것이라면 두 지수가 같아야 합니다. 값이 다르므로 초선형 증가는 분야 크기의 성질이 아니라, 크기와 함께 흐른 시간의 효과로 읽는 편이 자연스럽습니다. β는 서술량일 뿐, 도시 scaling 같은 법칙으로 읽을 수는 없습니다.`;
   const positive = F.collapse.filter(c => c.y2 > 0);
-  $('collapse-text').textContent = `각 점은 field×기간 셀 하나입니다(${P.n_cells}개, Y₂=0인 ${P.n_cells - P.n_positive}개는 log 축에서 빠짐). 앞 절에서 전 분야 pooled로 고정한 Y_c, Y_o, Y_x에 각 셀의 π만 넣은 값과 관측 Y₂를 비교했습니다. Spearman ρ=${P.spearman.toFixed(2)}, R²=${P.r2.toFixed(2)}로 분야가 달라도 한 곡선 근처에 모이고, 셀의 ${P.inside}/${P.n_cells}개(${pp1(P.inside / P.n_cells, 0)})가 half-sample 95% CI 안에 예측을 포함합니다. 관측 합은 예측의 ${P.mean_ratio.toFixed(2)}배입니다. CI 안 비율이 명목 95%보다 낮으므로 분야별 성 구성 차이가 일부 남아 있고, 이 곡선은 근사적 collapse이지 보편 법칙이 아닙니다.`;
+  $('collapse-text').textContent = `점 하나가 field×기간 셀 하나입니다(${P.n_cells}개${P.n_cells > P.n_positive ? `, Y₂=0인 ${P.n_cells - P.n_positive}개는 log 축에서 제외` : ''}). 앞 절에서 전체 표본으로 고정한 Y_c, Y_o, Y_x에 셀별 π만 넣어 예측했는데도, 분야가 달라도 점들이 대각선 근처에 모입니다(Spearman ρ=${P.spearman.toFixed(2)}, R²=${P.r2.toFixed(2)}). 다만 half-sample 95% CI 안에 예측이 드는 셀은 ${P.inside}/${P.n_cells}개(${pp1(P.inside / P.n_cells, 0)})로 명목 95%에 못 미치고, 관측 합도 예측의 ${P.mean_ratio.toFixed(2)}배입니다. 분야별 성 구성 차이가 일부 남아 있다는 뜻이므로, 이 곡선은 근사적 collapse로만 읽어야 합니다.`;
   drawCollapse = () => {
     const svg2 = $('collapse');
     const W = 1000, H2 = 480, m = { t: 14, r: 24, b: 44, l: 72 };
@@ -136,7 +136,7 @@ function renderGrowth(F) {
   drawCollapse();
 
   // Prediction.
-  $('predict-text').textContent = `Field 간 E의 차이를 중국 소속 저자 포함 논문 비중의 logit 변화(exact count)로 예측했습니다. 가중 상관은 r=${Q.r_weighted.toFixed(2)}, 순열 ${ko(20000)}회 p=${pval(Q.p_perm)}입니다. Leave-one-field-out 예측의 가중 R²는 ${Q.r2_cv.toFixed(2)}로, 표본 안의 상관보다 훨씬 작습니다. 분야 전체 증가율과 E의 Spearman 상관은 ρ=${Q.growth_rho.toFixed(2)}(p=${pval(Q.growth_p)})입니다. 구성 null은 ${C.inside}/${C.n_fields}개 field에서 관측 E의 95% CI 안에 들고, E/E_null의 중앙값은 ${C.ratio_median.toFixed(2)}입니다(exact π로 바꾸면 ${C.ratio_exact_median.toFixed(2)}). 다만 26개 field를 합친 적합도 검정은 p=${pval(C.chi2_p)}로 구성 null을 정확한 모형으로 받아들이지 않습니다. 즉 평균 수준은 구성 변화와 같은 크기이지만, field별 차이를 맞히는 예측력은 사실상 없습니다.`;
+  $('predict-text').textContent = `Field 간 E의 차이를 중국 소속 저자 포함 논문 비중의 logit 변화(exact count)로 예측해 봤습니다. 가중 상관은 r=${Q.r_weighted.toFixed(2)}이고 순열 ${ko(20000)}회 기준 p=${pval(Q.p_perm)}이지만, leave-one-field-out 가중 R²는 ${Q.r2_cv.toFixed(2)}에 그칩니다. 분야 전체 증가율과 E의 관계도 뚜렷하지 않습니다(Spearman ρ=${Q.growth_rho.toFixed(2)}, p=${pval(Q.growth_p)}). 구성 null은 ${C.n_fields}개 field 중 ${C.inside}개에서 관측 E의 95% CI 안에 들고, E/E_null의 중앙값도 ${C.ratio_median.toFixed(2)}입니다(exact π를 쓰면 ${C.ratio_exact_median.toFixed(2)}). 다만 전체 적합도 검정은 p=${pval(C.chi2_p)}로, 구성 null이 정확한 모형은 아닙니다. 평균 크기는 구성 변화와 맞아떨어지지만 field별 차이는 예측하지 못한다는 것이 이 절의 결론입니다.`;
   drawPredict = () => {
     const svg3 = $('predict');
     const W = 1000, H3 = 440, m = { t: 14, r: 150, b: 44, l: 56 };
@@ -171,7 +171,7 @@ function renderGrowth(F) {
   drawPredict();
 
   const sizes = Object.keys(K.profiles).map(k => K.members.filter(m => m.cluster === Number(k)).length);
-  $('cluster-text').textContent = `궤적의 모양으로 26개 field를 Ward clustering하면 silhouette 기준 k=${K.k}, 크기 ${sizes.join('·')}, silhouette ${K.silhouette.toFixed(2)}입니다. 모든 field가 같은 궤적을 따르고 표본 잡음만 다르다는 null의 중앙값은 ${K.null_median.toFixed(2)}, p=${pval(K.null_p)}로 이 묶음은 잡음과 구분되지 않습니다. 그래서 군집에 이름을 붙이지 않고 목록도 싣지 않습니다.`;
+  $('cluster-text').textContent = `궤적 모양으로 26개 field를 Ward clustering하면 silhouette 기준으로 ${K.k}개 묶음(크기 ${sizes.join('·')}, silhouette ${K.silhouette.toFixed(2)})이 나옵니다. 그러나 모든 field가 같은 궤적을 따르고 표본 잡음만 다르다고 가정해도 silhouette 중앙값이 ${K.null_median.toFixed(2)}이어서(p=${pval(K.null_p)}), 이 묶음은 잡음과 구분되지 않습니다. 그래서 군집에 이름을 붙이지 않았고 목록도 싣지 않았습니다.`;
 }
 
 function renderRetest(R, X) {

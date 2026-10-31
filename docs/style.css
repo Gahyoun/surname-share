@@ -71,10 +71,10 @@ h1, h2, h3 { color: var(--gk-text-bolder); line-height: var(--krds-line-height-b
 h1 { font-size: var(--type-h1); margin: 0 0 var(--gap-title); }
 h2 { font-size: var(--type-h2); margin: var(--gap-h2) 0 var(--gap-title); scroll-margin-top: var(--krds-number-8); }
 h3 { font-size: var(--type-h3); margin: var(--gap-h2-h3) 0 var(--krds-number-5); }
-p { margin: 0 0 var(--krds-number-7); max-width: 76ch; }
-.lede { font-size: var(--krds-typo-body-large); max-width: 66ch; }
+p { margin: 0 0 var(--krds-number-7); }
+.lede { font-size: var(--krds-typo-body-large); }
 .note { font-size: var(--krds-typo-body-small); color: var(--gk-text-subtle); }
-ul { padding-left: var(--krds-number-9); max-width: 76ch; }
+ul { padding-left: var(--krds-number-9); }
 li { margin-bottom: var(--krds-number-5); }
 code { font-size: 0.92em; overflow-wrap: anywhere; }
 sup a { text-decoration: none; }
@@ -120,5 +120,6 @@ th { color: var(--gk-text-bolder); font-weight: var(--krds-typo-font-weight-bold
 th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 tr.thin td { color: var(--gk-text-subtle); }
 table.wrapcells td, table.wrapcells th { white-space: normal; text-align: left; vertical-align: top; }
-ol.refs { padding-left: var(--krds-number-9); font-size: var(--krds-typo-body-small); max-width: 90ch; }
+ol.refs { padding-left: var(--krds-number-9); font-size: var(--krds-typo-body-small); word-break: normal; overflow-wrap: normal; }
+ol.refs a { white-space: nowrap; }
 footer { border-top: var(--krds-number-1) solid var(--gk-border-light); padding: var(--krds-number-10) 0; font-size: var(--krds-typo-body-small); color: var(--gk-text-subtle); }
