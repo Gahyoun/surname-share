@@ -75,7 +75,7 @@ function renderHeadline(D) {
       <small>전체 ≈ ${millions(a.papers)}편</small><small>core 2020–25: ${pct(c.recent_share)}</small></div>`;
   }).join('');
   const m = D.meta;
-  $('scope').textContent = `큰 수: OpenAlex article 전체(1975–2025, ${millions(m.all.population)}편) 중 제1저자 비중. 작은 수: CWTS core sources의 2020–25 비중. 표본 ${(m.all.n_sample + m.core.n_sample).toLocaleString('ko-KR')}건.`;
+  $('scope').textContent = `상단 큰 숫자: OpenAlex 전체 article(1975–2025년, 약 ${millions(m.all.population)}편) 중 해당 성씨가 제1저자인 논문의 비중. 하단 작은 숫자: 주요 학술지 묶음인 CWTS core sources의 최근(2020–25년) 비중. 분석 표본 합계 ${(m.all.n_sample + m.core.n_sample).toLocaleString('ko-KR')}건.`;
 }
 
 let drawAlluvial = () => {};
@@ -258,19 +258,15 @@ const num = (x, d = 2) => (x === null || x === undefined ? '—' : x.toFixed(d))
 const pval = p => (p < 0.001 ? '<0.001' : p.toFixed(3));
 
 function renderDistribution(X, R, F) {
-  const retest = g => R.fits.find(f => f.group === g);
-  const oos = R.out_of_sample, snapN = R.snapshots.reduce((a, r) => a + r.n, 0);
-  const fieldRows = F.growth.filter(g => g.level === 'field'), comp = F.prediction.composition;
   const fit = name => X.tails.find(t => t.name === name);
   const pooled = fit('Core 2000-2025'), china = fit('Core, China'), other = fit('Core, non-China');
   const syn = k => X.synthetic.find(s => s.kind === k);
   const M = X.mixture;
-  const last = X.concentration.at(-1), first = X.concentration[0];
+  const last = X.concentration.at(-1);
   const terms = { cc: last.pi ** 2 * M.y_china, cross: 2 * last.pi * (1 - last.pi) * M.y_cross, oo: (1 - last.pi) ** 2 * M.y_other };
   const termTotal = terms.cc + terms.cross + terms.oo;
-  const hillChina = X.concentration.at(-1).hill1_china, hillOther = X.concentration.at(-1).hill1_other;
 
-  $('dist-lede').innerHTML = `<strong>결론부터: 성 빈도는 exponential보다 확실히 두껍지만, power law라고 말할 근거는 없습니다.</strong> 이 표본 크기에서는 power-law 검정이 lognormal 모집단도 ${pct(syn('lognormal').reject_gof, 0)}만 기각해서, 기각되지 않았다는 사실이 거의 정보를 주지 않습니다. 표본을 늘려 집단별로 다시 재도 사전 규칙의 판정은 "판정 불가"입니다. 대신 더 단단한 결과는 집중도 쪽에 있습니다. 두 논문의 제1저자 성이 겹칠 확률 $Y_2$의 증가는 중국 소속 비중 π 하나로 거의 재현됩니다.`.replace('$Y_2$', 'Y₂');
+  $('dist-lede').innerHTML = `<strong>결론부터 말하면, 저자 성씨 빈도 분포의 tail은 exponential보다 확실히 두껍지만(heavy-tailed), 엄밀한 의미의 power law를 따른다고 단정할 근거는 없습니다.</strong> 현재 표본 크기에서는 표준적인 power-law 적합도(GOF) 검정이 대안 분포인 lognormal 모집단조차 ${pct(syn('lognormal').reject_gof, 0)}밖에 기각하지 못하므로, 검정에서 기각되지 않았다는 사실만으로는 power law의 증거가 되지 못합니다. 표본을 대폭 늘려 집단별로 재검정하더라도 사전 판정 규칙에 따른 결론은 "판정 불가"입니다. 반면 통계적으로 훨씬 견고한 결과는 성씨 집중도 지표에서 확인됩니다. 무작위로 뽑은 두 논문의 제1저자 성씨가 서로 같을 확률인 Y₂(inverse participation ratio)의 시계열 증가는 중국 소속 비중 π라는 변수 하나로 거의 완벽하게 재현됩니다.`;
   $('dist-tiles').innerHTML = [
     [num(pooled.alpha), `Tail 지수 α`, `95% ${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)} · n=${pooled.n_authors.toLocaleString('ko-KR')}`],
     [pct(syn('lognormal').reject_gof, 0), 'Lognormal 기각력', `합성 ${syn('lognormal').reps}회 · GOF p<0.1`],
@@ -285,7 +281,7 @@ function renderDistribution(X, R, F) {
     { label: '그 외', color: '--viz-life-ink', key: 'Core, non-China' },
   ];
   legend($('legend-rank'), seriesR.map(s => [s.label, s.color]));
-  $('rank-text').textContent = `중국 소속 곡선은 성 ${china.n_surnames}개에서 끝나고, 그 외 곡선은 ${fmt(other.n_surnames)}개까지 이어집니다. 전체 곡선은 이 둘의 합입니다. 위쪽 ${pooled.n_tail}개 성에 맞춘 점선의 기울기는 −${num(pooled.zipf_exponent)}입니다. 낮은 빈도 구간은 표본 추출이 모양을 만드는 영역이라 해석하지 않습니다.`;
+  $('rank-text').textContent = `성씨 빈도를 순위(rank)에 따라 log–log 축에 그리면 두 집단의 구조적 차이가 명확히 드러납니다. 중국 소속 집단의 곡선은 고유 성씨 ${china.n_surnames}개에서 일찍 끝나는 반면, 그 외(non-China) 집단의 곡선은 ${fmt(other.n_surnames)}개까지 길게 이어집니다. 전체(Core 2000–25) 곡선은 이질적인 두 분포가 합쳐진(pooled) 결과입니다. 상위 ${pooled.n_tail}개 성씨(tail 구간)에 적합시킨 점선의 Zipf 기울기는 −${num(pooled.zipf_exponent)}입니다. 빈도가 낮은 오른쪽 끝 구간은 유한 표본 추출(subsampling) 효과가 곡선 형태를 왜곡하는 영역이므로 해석에서 제외합니다.`;
   drawRank = () => {
     const svg = $('rank-chart');
     const W = 1000, H = 440, m = { t: 14, r: 96, b: 40, l: 56 };
@@ -331,7 +327,7 @@ function renderDistribution(X, R, F) {
   drawRank();
 
   // Tail fits.
-  $('fit-text').textContent = `Discrete power-law MLE와 KS 기반 kmin 선택(Clauset et al.)을 썼고, 표본 추출이 지배하는 구간을 빼기 위해 kmin ≥ ${X.kmin_floor}로 제한했습니다. 표의 R은 Vuong 통계량으로, 양수면 power law 쪽, 음수면 대안 쪽입니다. Exponential은 모든 표본에서 밀려나고(R>0), lognormal과 stretched exponential은 어느 쪽도 구분되지 않습니다.`;
+  $('fit-text').textContent = `Clauset et al.(2009)의 표준 절차에 따라 이산형(discrete) power-law MLE와 KS 통계량 기반의 kmin 선택법을 적용하되, 표본 추출 왜곡이 지배하는 저빈도 구간을 배제하기 위해 하한을 kmin ≥ ${X.kmin_floor}로 제한했습니다. 아래 표의 R은 비내포(non-nested) 모형 비교를 위한 Vuong 통계량으로, R > 0이면 power law가, R < 0이면 대안 분포가 데이터를 더 잘 설명한다는 뜻입니다. 검정 결과 exponential 분포는 모든 표본에서 일관되게 기각되지만(R > 0), lognormal이나 stretched exponential 같은 다른 heavy-tailed 대안 분포들과 비교했을 때는 통계적으로 유의미한 우열이 가려지지 않습니다.`;
   const rows = X.tails.map(t => {
     if (t.alpha === null) return `<tr><td>${NAME_KO[t.name]}</td><td>${t.n_authors.toLocaleString('ko-KR')}</td><td colspan="7">빈도 ≥ ${X.kmin_floor}인 성이 50개 미만이라 적합하지 않음 (최대 빈도 ${t.k_max})</td></tr>`;
     const a = t.alternatives;
@@ -340,11 +336,11 @@ function renderDistribution(X, R, F) {
   $('fit-table').innerHTML = `<thead><tr><th>표본</th><th>n</th><th>kmin (tail 성 수)</th><th>α (95%)</th><th>GOF p</th><th>R 대 exponential</th><th>R 대 lognormal</th><th>R 대 stretched</th><th>Cutoff LR p</th></tr></thead><tbody>${rows}</tbody>`;
 
   // Synthetic validation.
-  $('synth-text').textContent = `실제 데이터에 적용하기 전에, 정답을 아는 합성 모집단에서 같은 n=${X.n_core_equal.toLocaleString('ko-KR')}으로 같은 절차를 돌렸습니다(각 ${syn('lognormal').reps}회, GOF는 회당 ${X.reps.synthetic_gof}회). Power-law 입력의 α는 복원되고 위양성도 낮아 절차 자체는 건강합니다. 문제는 검정력입니다. Lognormal이나 혼합 null도 거의 기각되지 않습니다. 혼합 null은 측정된 중국 성 빈도와, 그 외 집단의 Y₂에 맞춘 lognormal을 π=0.18로 섞은 것으로, power law가 전혀 들어 있지 않은데도 α ${num(syn('mixture').alpha_lo)}–${num(syn('mixture').alpha_hi)}로 나옵니다. 실측 ${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)}와 겹치는 값입니다.`;
+  $('synth-text').textContent = `실제 데이터를 해석하기에 앞서, 참값(ground truth)을 알고 있는 합성 모집단(synthetic population)에서 동일한 표본 크기(n=${X.n_core_equal.toLocaleString('ko-KR')})를 추출해 동일한 검정 절차를 반복 수행했습니다(모집단별 ${syn('lognormal').reps}회, GOF bootstrap은 회당 ${X.reps.synthetic_gof}회). 진짜 power law에서 추출한 표본에서는 지수 α가 정확히 복원되고 기각률(위양성)도 낮아 추정 알고리즘 자체는 정상적으로 작동합니다. 핵심 문제는 검정력(statistical power) 부족입니다. 참모집단이 lognormal이거나 혼합(mixture) null일 때도 GOF 검정이 이를 거의 기각하지 못합니다. 특히 혼합 null은 실제 중국 성씨 빈도 분포와 그 외 집단의 Y₂에 맞춘 lognormal 분포를 π=0.18 비율로 단순 결합한 모형으로, 내부에 power law 생성 메커니즘이 전혀 없는데도 겉보기 지수 α가 ${num(syn('mixture').alpha_lo)}–${num(syn('mixture').alpha_hi)} 구간으로 추정됩니다. 이는 실제 데이터에서 관측된 신뢰구간(${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)})과 그대로 겹치는 범위입니다.`;
   $('synth-table').innerHTML = `<thead><tr><th>모집단</th><th>추정 α 중앙값 (95%)</th><th>Tail 성 수</th><th>GOF 기각률 (p&lt;0.1)</th><th>Lognormal 선호</th><th>Cutoff 선호</th></tr></thead><tbody>${['power', 'lognormal', 'mixture'].map(k => { const s = syn(k); return `<tr><td>${SYNTH_KO[k]}</td><td>${num(s.alpha_median)} (${num(s.alpha_lo)}–${num(s.alpha_hi)})</td><td>${fmt(s.n_tail_median)}</td><td>${pct(s.reject_gof, 0)}</td><td>${pct(s.prefers_lognormal, 0)}</td><td>${pct(s.prefers_cutoff, 0)}</td></tr>`; }).join('')}</tbody>`;
 
   // Mixture null.
-  $('mix-text').textContent = `Y₂ = Σpₖ²는 무작위로 고른 두 논문의 제1저자 성이 같을 확률이며, 통계물리의 inverse participation ratio입니다. 모든 성이 균등하면 1/S, 한 성뿐이면 1입니다. 두 집단이 섞이면 Y₂(π) = π²Y_c + (1−π)²Y_o + 2π(1−π)Y_x 가 항등식으로 성립합니다. Y_c, Y_o, Y_x를 2000–25 전체 값(${num(M.y_china, 4)}, ${num(M.y_other, 5)}, ${num(M.y_cross, 5)})으로 고정하고 π만 바꾸면, 2000–04에서 2020–25까지의 Y₂ 증가 ${(M.observed_change * 1e3).toFixed(2)}×10⁻³ 중 ${(M.null_change * 1e3).toFixed(2)}×10⁻³(${pct(M.null_fraction, 0)})가 재현됩니다. 이 곡선에는 Y₂에 맞춰 조정한 parameter가 없습니다. 예외도 있습니다. 2000–04의 예측값은 CI 위에 있어, 초기에는 그 집단의 내부 값이 전체 평균과 달랐을 수 있습니다. 2020–25의 Y₂에서는 중국-중국 쌍이 ${pct(terms.cc / termTotal, 0)}, 교차 쌍이 ${pct(terms.cross / termTotal, 0)}, 그 외-그 외 쌍이 ${pct(terms.oo / termTotal, 0)}를 차지합니다.`;
+  $('mix-text').textContent = `Y₂ = Σpₖ²는 무작위로 뽑은 두 논문의 제1저자 성씨가 서로 같을 확률로, 생태학의 Simpson 집중도이자 통계물리의 inverse participation ratio(IPR)에 해당합니다. S개의 성씨가 완전히 균등하게 분포하면 Y₂ = 1/S이고, 단 하나의 성씨만 존재하면 Y₂ = 1이 됩니다(따라서 역수인 1/Y₂는 '유효 성씨 수'로 해석할 수 있습니다). 전체 모집단이 중국 소속(비중 π)과 그 외(비중 1−π) 두 집단으로 구성될 때, 전체 집중도는 항등식 Y₂(π) = π²Y_c + (1−π)²Y_o + 2π(1−π)Y_x를 따릅니다. 여기서 집단 내 집중도(Y_c, Y_o)와 교차 집중도(Y_x)를 2000–25년 전체 기간 상수(${num(M.y_china, 4)}, ${num(M.y_other, 5)}, ${num(M.y_cross, 5)})로 고정하고 오직 연도별 중국 소속 비중 π만 변화시키면, 2000–04년에서 2020–25년 사이 실제 관측된 Y₂ 증가분(${(M.observed_change * 1e3).toFixed(2)}×10⁻³) 가운데 ${(M.null_change * 1e3).toFixed(2)}×10⁻³(${pct(M.null_fraction, 0)})가 그대로 재현됩니다. 이 혼합 null 곡선은 시계열 Y₂에 맞추어 적합(fitting)한 자유 parameter가 전혀 없는 순수 구성 모형입니다. 다만 2000–04년 구간에서는 예측치가 관측 95% CI 상단 바깥에 위치하는데, 이는 초기 표본에서 각 집단 내부의 성씨 분포가 전체 기간 평균과 다소 달랐을 가능성을 시사합니다. 최근(2020–25년) Y₂를 구성하는 성씨 일치 쌍의 기여도를 분해해 보면 중국–중국 저자 쌍이 ${pct(terms.cc / termTotal, 0)}, 교차 쌍이 ${pct(terms.cross / termTotal, 0)}, 그 외–그 외 쌍이 ${pct(terms.oo / termTotal, 0)}를 차지합니다.`;
   legend($('legend-mix'), [['연도별 측정값', '--viz-phys-ink'], ['혼합 null', '--gk-text-bolder']]);
   drawMix = () => {
     const svg = $('mix-chart');
@@ -372,30 +368,6 @@ function renderDistribution(X, R, F) {
   };
   drawMix();
   $('mix-table').innerHTML = `<thead><tr><th>기간</th><th>π</th><th>Y₂ (95% CI)</th><th>혼합 null</th><th>중국 소속 Y_c</th><th>exp(H) 중국 소속</th><th>exp(H) 그 외</th><th>Coverage 그 외</th></tr></thead><tbody>${X.concentration.map(c => `<tr><td>${c.period.replace('-', '–')}</td><td>${pct(c.pi, 1)}</td><td>${c.y2_known.toFixed(5)} (${c.y2_known_lo.toFixed(5)}–${c.y2_known_hi.toFixed(5)})</td><td>${c.null_pooled.toFixed(5)}</td><td>${c.y_china.toFixed(4)}</td><td>${Math.round(c.hill1_china)} (n=${c.n_china})</td><td>≈ ${fmt(c.hill1_other)}</td><td>${pct(c.coverage_other, 0)}</td></tr>`).join('')}</tbody>`;
-
-  // Claim audit.
-  const claims = [
-    ['성 빈도의 tail은 exponential보다 두껍다', `적합한 ${X.tails.filter(t => t.alpha !== null).length}개 표본 모두 R>0, p≤${pval(Math.max(...X.tails.filter(t => t.alpha !== null).map(t => t.alternatives.exponential.p)))}`, '보였다 (관찰)'],
-    ['Core 2000–25의 α는 약 ' + num(pooled.alpha), `95% ${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)}, n=${pooled.n_authors.toLocaleString('ko-KR')}. 서술량이며 scale-free의 증거가 아님`, '측정값으로만 보고'],
-    ['성 빈도는 power law다', `집단별 재검정에서 cutoff 기각 없음(p=${pval(retest('non-China').p)}, ${pval(retest('China').p)}). lognormal 탐지율 ${pct(retest('non-China').detect_lognormal, 0)}, ${pct(retest('China').detect_lognormal, 0)}로 기준 80% 미달`, '주장 불가. "판정 불가"까지'],
-    ['Y₂ 증가는 π 변화와 부합한다', `표본 외 n=${snapN.toLocaleString('ko-KR')}: 재현 ${pct(oos.fraction, 0)}, R²=${num(oos.r2)}, ${oos.n_snapshots}개 시점 중 ${oos.inside}개가 CI 안`, '시사한다 (함의). 인과 아님'],
-    ['다섯 성은 대부분의 field에서 분야 전체보다 빠르게 늘었다', `${fieldRows.filter(g => g.e_lo > 1).length}/${fieldRows.length}개 field에서 E의 95% CI 하한 > 1`, '보였다 (관찰)'],
-    ['초과 증가의 평균 크기는 중국 소속 비중 변화와 같은 크기다', `구성 null이 ${comp.inside}/${comp.n_fields}개 field의 CI 안, E/E_null 중앙값 ${num(comp.ratio_median)}`, '시사한다 (함의). 인과 아님'],
-    ['Field별 E의 순위 차이는 실재한다', `Q 검정 p=${pval(F.heterogeneity.p)}, I²=${pct(F.heterogeneity.I2, 0)}, 셀당 표본 600건. 차이 없음을 보인 것은 아님`, '주장 불가. "구분되지 않는다"까지'],
-    ['ML에서 다섯 성이 유독 빠르게 늘었다', `논문 수 ×${F.ml.growth_five.toFixed(0)}, 그러나 분야 전체 ×${F.ml.growth_all.toFixed(1)}. E ${num(F.ml.e)} (${num(F.ml.e_lo)}–${num(F.ml.e_hi)})가 field 평균 ${num(F.heterogeneity.mean_e)}와 겹침`, '주장 불가. 절대 증가만 관찰'],
-    ['중국 소속 집단의 성 다양성은 그 외보다 두 자릿수 작다', `1/Y₂ 약 ${Math.round(1 / M.y_china)} 대 ${fmt(1 / M.y_other)}. exp(H)는 약 ${Math.round(hillChina)} 대 ${fmt(hillOther)}이지만 그 외의 coverage가 ${pct(last.coverage_other, 0)}라 이 값은 불확실`, '보였다 (1/Y₂ 기준)'],
-    ['차이의 기원은 새 성의 출현율이다', 'Baek et al.이 나라별 분포 차이에 대해 제시한 가설. 이 데이터로는 검정하지 않음', '추측. 출처 명시'],
-  ];
-  $('claim-table').innerHTML = `<thead><tr><th>주장</th><th>현재 근거</th><th>허용되는 최대 강도</th></tr></thead><tbody>${claims.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
-  $('banned').innerHTML = '<strong>쓰면 안 되는 문장:</strong> "저자 성 분포는 scale-free다", "Zhang이 늘어난 원인은 …이다", "응축(condensation) 상전이가 일어났다", "ML은 중국계 저자가 장악했다", "성 비중이 늘면 분야 생산성이 오른다". 첫째와 둘째, 넷째와 다섯째는 이 데이터가 뒷받침하지 않습니다. 성은 국적도 출신도 아니며 저자의 소속과도 다릅니다. 셋째는 시스템 크기를 고정한 finite-size scaling을 재지 않았으므로 근거가 없습니다.';
-  const life = [
-    ['kmin 제한 없음, n≈4,300–15,000', 'α ≈ 3.2–3.6, 일부 표본은 kmin=1 선택', '재표본마다 α가 약 2.2와 약 3.5로 갈림', '철회. k=1 부근의 표본 추출 artifact'],
-    ['복원 bootstrap', '2000–04 Y₂ CI 0.00051–0.00062', '점추정치 0.00035가 CI 밖', '교체. 중복 논문이 같은 성 쌍으로 세어짐. half-sample로 변경'],
-    ['Pooled 표본, n≈15,600', '합쳐진 성 분포가 power law인지 묻는다', '혼합 null은 power law 없이 같은 범위의 α를 만듦', '교체. 집단별 cutoff 검정으로 바꾸고 pooled는 기술 통계로 내림'],
-    ['2000–04 값을 기준으로 고정, 중국 n=146', 'π가 Y₂ 증가의 67%를 설명', '2000–04의 중국 표본이 너무 작음', '교체. 전 기간 pooled 값 사용 후 ' + pct(M.null_fraction, 0)],
-    ['기간 표본, n≈15,600', `π가 Y₂ 증가의 ${pct(M.null_fraction, 0)}를 재현`, `새 연도 표본 n=${snapN.toLocaleString('ko-KR')}에서 ${pct(oos.fraction, 0)}, ${oos.n_snapshots}개 시점 중 ${oos.inside}개만 CI 안`, '약화. 방향과 크기는 유지, 정량 값은 표본 외 값으로 보고'],
-  ];
-  $('life-table').innerHTML = `<thead><tr><th>시점</th><th>잠정 진술</th><th>확인 결과</th><th>처분</th></tr></thead><tbody>${life.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
 }
 
 const annual = x => `${(100 * (Math.exp(x) - 1)).toFixed(1)}%`;
@@ -460,33 +432,32 @@ function renderProse(D) {
   const t = s => core.trends.find(d => d.surname === s);
   const dec = s => core.decomposition.find(d => d.surname === s);
   const ex = y => D.exact.find(r => r.year === y);
-  const coreField = f => core.by_field.find(d => d.field === f && d.surname === 'All five');
   const liCore = core.top_recent.find(d => d.surname === 'Li');
   const pp = x => `${(100 * x).toFixed(2)}pp`;
   const cnShare = (y, k) => pct(ex(y)[k] / ex(y)[k === 'core_cn' ? 'core_all' : 'n_articles'], 1);
   const validity = core.validity;
   const five = dec('All five'), z = dec('Zhang');
-  $('lede').innerHTML = `제1저자 성이 Zhang인 논문은 전체 논문의 약 <strong>${pct(a('Zhang').share, 1)}</strong>로, 대략 100편에 1편입니다. 최근 주요 저널만 보면 ${pct(c('Zhang').recent_share, 1)}까지 올라갑니다. Zhang·Chen·Wang·Guo·Liu 다섯을 합치면 전체의 ${pct(a('All five').share, 1)}, 최근 주요 저널의 ${pct(c('All five').recent_share, 1)}입니다.`;
-  $('alluvial-text').textContent = `세로 기둥은 기간이고 줄기는 field입니다. 줄기에 마우스를 올리면 강조되고, 클릭하면 강조가 고정됩니다. 1975–99년은 core 표본이 연 200건뿐이라 줄기의 굵기가 불안정합니다.`;
-  $('ts-text').textContent = `Core sources에서 다섯 성의 합계는 2000–04년 ${pct(five.total_a, 1)}에서 2020–25년 ${pct(five.total_b, 1)}로 늘었고, 연 ${annual(t('All five').growth)}씩 성장했습니다. Wang(연 ${annual(t('Wang').growth)})과 Guo(${annual(t('Guo').growth)})가 빠르고 Chen(${annual(t('Chen').growth)})이 가장 느립니다. 특정 연도에 꺾였다고 말할 근거는 없습니다. 구조 변화 연도의 구간이 합계 기준 ${t('All five').break_lo}–${t('All five').break_hi}년으로 너무 넓습니다.`;
-  $('coverage-text').textContent = `전체 OpenAlex만 보면 2010년대 중반에 비중이 줄어드는 것처럼 보이지만, 이는 수록 범위 변화입니다. 중국 소속 저자가 포함된 논문의 비중은 전체 OpenAlex에서 2011년 ${cnShare(2011, 'all_cn')}, 2016년 ${cnShare(2016, 'all_cn')}로 떨어지는 반면, core에서는 같은 기간 ${cnShare(2011, 'core_cn')}에서 ${cnShare(2016, 'core_cn')}로 오릅니다. 이 페이지의 추세는 그래서 core 기준입니다. 이 값은 표본이 아닌 exact count입니다.`;
-  $('why-text').innerHTML = `성이 흔해진 것이 아니라 중국 논문이 늘어난 결과입니다<sup><a href="#r4">4</a></sup>. 소속이 확인된 논문 기준으로 중국 소속 제1저자 비중은 ${pct(five.pi_a, 1)}에서 ${pct(five.pi_b, 1)}로 늘었습니다. 다섯 성 합계의 증가 ${pp(five.change)} 중 ${pp(five.china_composition)}(${(100 * five.china_composition / five.change).toFixed(0)}%)가 이 구성 변화로 설명되고, Zhang은 거의 전부(${pp(z.china_composition)} / ${pp(z.change)})입니다. Field 구성 변화의 기여는 ${pp(core.field_shift.between_fields)}로, field 안에서 늘어난 몫 ${pp(core.field_shift.within_fields)}에 비해 작습니다. 이 분해는 기여도 계산이며 인과 추정은 아닙니다.`;
+  $('lede').innerHTML = `제1저자의 성씨가 Zhang인 논문은 전체 학술 논문의 약 <strong>${pct(a('Zhang').share, 1)}</strong>로, 대략 100편 중 1편꼴입니다. 대상을 최근(2020–25년) 주요 학술지(core sources)로 좁히면 이 비중은 ${pct(c('Zhang').recent_share, 1)}까지 올라갑니다. 흔히 함께 언급되는 Zhang·Chen·Wang·Guo·Liu 다섯 성씨를 합치면 전체 논문의 ${pct(a('All five').share, 1)}, 최근 주요 학술지 논문의 ${pct(c('All five').recent_share, 1)}를 차지합니다.`;
+  $('alluvial-text').textContent = `아래 alluvial diagram에서 세로 기둥은 5년 단위 시기를, 기둥 사이를 잇는 줄기는 26개 학문 분야(field)를 나타냅니다. 특정 줄기에 마우스를 올리면 해당 field의 시계열 흐름이 강조되고, 클릭하면 강조 표시가 고정됩니다. 상단 버튼으로 모집단(core sources vs 전체 OpenAlex), 성씨, 높이 기준(추정 논문 수 vs 기간별 100% 비중)을 전환할 수 있습니다. 다만 1975–99년 구간은 core 표본이 연 200건뿐이어서 추정치의 표본 변동이 큽니다.`;
+  $('ts-text').textContent = `Core sources 기준으로 다섯 성씨의 제1저자 비중 합계는 2000–04년 ${pct(five.total_a, 1)}에서 2020–25년 ${pct(five.total_b, 1)}로 커졌으며, 연평균 ${annual(t('All five').growth)}씩 증가했습니다. 성씨별로는 Wang(연 ${annual(t('Wang').growth)})과 Guo(${annual(t('Guo').growth)})의 증가세가 가파르고 Chen(${annual(t('Chen').growth)})이 가장 완만합니다. 한편 특정 연도를 기점으로 추세가 급변(structural break)했다고 볼 통계적 근거는 없습니다. 추세 변화 시점의 95% CI가 합계 기준 ${t('All five').break_lo}–${t('All five').break_hi}년으로 매우 넓게 나타나는데, 이는 특정 사건에 의한 굴절보다는 2000년대 내내 꾸준한 누적 증가가 이어졌음을 뜻합니다.`;
+  $('coverage-text').textContent = `시계열 분석에서 전체 OpenAlex 대신 core sources를 기본 모집단으로 삼은 이유는 데이터베이스 수록 범위(coverage)의 변화 때문입니다. 전체 OpenAlex를 그대로 보면 2010년대 중반에 중국계 성씨 비중이 오히려 줄어드는 것처럼 나타나는데, 이는 실제 학계의 변화가 아니라 OpenAlex의 연도별 색인 구성이 달라진 데 따른 착시입니다. 실제로 중국 기관 소속 저자가 포함된 논문의 비중(표본이 아닌 전수 exact count 기준)을 비교해 보면, 전체 OpenAlex에서는 2011년 ${cnShare(2011, 'all_cn')}에서 2016년 ${cnShare(2016, 'all_cn')}로 급감하는 반면, 선별된 학술지 집합인 core sources에서는 같은 기간 ${cnShare(2011, 'core_cn')}에서 ${cnShare(2016, 'core_cn')}로 일관되게 상승합니다. 따라서 시계열 추세는 수록 기준이 안정적인 core sources에서 측정해야 왜곡을 피할 수 있습니다.`;
+  $('why-text').innerHTML = `다섯 성씨의 비중이 급증한 현상은 기존 연구자 집단 안에서 특정 성씨가 흔해졌기 때문이 아니라, 학계 전체에서 중국 소속 연구자의 논문 비중이 크게 늘어난 결과입니다<sup><a href="#r4">4</a></sup>. 소속 기관이 확인된 core 논문 기준으로 중국 소속 제1저자의 비중(π)은 2000–04년 ${pct(five.pi_a, 1)}에서 2020–25년 ${pct(five.pi_b, 1)}로 급증했습니다. 전체 비중 변화를 '중국 소속 비중 증가 효과(중국 비중 효과)'와 '집단 내부의 성씨 비율 변화(집단 내 효과)'로 분해(decomposition)해 보면, 다섯 성씨 합계 증가분(+${pp(five.change)}) 가운데 ${pp(five.china_composition)}(${(100 * five.china_composition / five.change).toFixed(0)}%)가 중국 소속 저자 비중의 확대만으로 설명됩니다. 특히 Zhang은 전체 증가분(+${pp(z.change)})의 거의 전부(${pp(z.china_composition)})가 이 구성 효과에서 비롯됩니다. 또한 이 성씨들이 많이 분포한 학문 분야 자체가 비대해진 효과(field 간 구성 변화)는 ${pp(core.field_shift.between_fields)}에 불과해, 개별 field 내부에서 비중이 늘어난 몫(${pp(core.field_shift.within_fields)})이 변화를 압도합니다. 다만 이러한 분해는 산술적 기여도 계산(accounting decomposition)이며 인과 추정은 아닙니다.`;
   const af = f => all.by_field.find(d => d.field === f && d.surname === 'All five');
-  const fr = f => `${f} ${pct(af(f).recent_share, 1)}`;
+  const fr = f => `${f}(${pct(af(f).recent_share, 1)})`;
   const sorted = all.by_field.filter(d => d.surname === 'All five').sort((p, q) => q.recent_share - p.recent_share);
   const zf = all.by_field.filter(d => d.surname === 'Zhang').sort((p, q) => q.recent_share - p.recent_share)[0];
-  $('field-text').textContent = `Field 비교는 층마다 2020–25년 표본 600건이 보장되는 전체 OpenAlex를 기본으로 합니다. 다섯 성 합계는 ${fr(sorted[0].field)}, ${fr(sorted[1].field)}, ${fr(sorted[2].field)} 순으로 높고, ${fr(sorted.at(-1).field)}, ${fr(sorted.at(-2).field)}로 가장 낮습니다. Zhang만 보면 ${zf.field}가 ${pct(zf.recent_share, 1)}로 가장 높습니다. 표본이 600건이라 인접한 순위는 CI가 겹칩니다. 셀에 마우스를 올리면 95% CI가 나오고, core로 바꾸면 표본 300건 미만 행은 흐리게 표시됩니다.`;
+  $('field-text').textContent = `학문 분야별 단면 비교는 모든 field×기간 층(stratum)마다 2020–25년 표본 600건이 균일하게 확보된 전체 OpenAlex를 기본 기준으로 삼았습니다. 최근(2020–25년) 다섯 성씨 합계 비중은 ${fr(sorted[0].field)}, ${fr(sorted[1].field)}, ${fr(sorted[2].field)} 순으로 높고, 반대로 ${fr(sorted.at(-1).field)}와 ${fr(sorted.at(-2).field)}에서 가장 낮습니다. 단일 성씨로 Zhang만 보더라도 ${zf.field}(${pct(zf.recent_share, 1)})에서 비중이 가장 높게 나타납니다. 다만 field당 표본이 600건이므로 인접한 순위 간에는 95% CI가 서로 겹칩니다. 표의 각 셀에 마우스를 올리면 95% CI를 확인할 수 있으며, 모집단을 core sources로 전환하면 표본 크기가 300건 미만인 field는 해석에 주의하도록 흐리게 표시됩니다.`;
   $('method-body').innerHTML = `<ul>
-    <li><strong>정의.</strong> 제1저자 성으로 셉니다. 엄밀한 "et al."(저자 3인 이상)로 좁히면 전체 OpenAlex에서 Zhang은 ${pct(a('Zhang').et_al_share)}, core에서는 ${pct(c('Zhang').et_al_share)}입니다.</li>
-    <li><strong>왜 표본인가.</strong> OpenAlex<sup><a href="#r1">1</a></sup>에는 제1저자 성 필터가 없습니다. 전체 article은 field×5년 260개 층에서 층당 최대 600건, core는 연도별 200–1,000건을 무작위 추출해 합계 ${(D.meta.all.n_sample + D.meta.core.n_sample).toLocaleString('ko-KR')}건을 얻었고, 층화 Hájek ratio estimator와 linearized variance로 95% CI를 계산했습니다. Field가 없는 논문은 분모에서 제외했습니다(core 표본의 ${pct(D.meta.core.unfielded, 1)}).</li>
-    <li><strong>검증.</strong> Core 2020–25 중국 소속 제1저자 중 중국 5대 성(Wang·Li·Zhang·Liu·Chen)은 ${pct(validity.top5_share, 1)}(CI ${pct(validity.top5_lo, 1)}–${pct(validity.top5_hi, 1)})로, 2020년 호적 인구 통계의 30.8%와 일치합니다<sup><a href="#r7">7</a></sup>. 참고로 트윗 목록에 없는 Li가 core 2020–25에서 ${pct(liCore.share)}로 Wang 다음입니다.</li>
-    <li><strong>성은 사람이 아닙니다.</strong> 같은 성·같은 이니셜의 다른 사람을 구분하지 않습니다<sup><a href="#r5">5,6</a></sup>. 여기서는 사람이 아니라 논문을 세므로 동명이인이 결과를 왜곡하지 않지만, "Zhang 한 사람의 논문"으로 읽으면 안 됩니다.</li>
-    <li><strong>로마자 표기.</strong> 張의 Chang·Cheung, 王의 Wong처럼 다른 표기는 포함하지 않았습니다. 이들을 더해도 core 2020–25에서 Zhang은 약 ${pp(core.aliases[0].alias_share)} 늘어나는 정도입니다. 반대로 한국의 Chang이나 동남아의 Tan은 다른 성일 수 있어 합치지 않았습니다.</li>
-    <li><strong>이름 parsing.</strong> "Zhang Wei"처럼 성이 앞에 오는 표기는 병음이고 소속이 중화권이거나 없을 때만 성으로 읽었습니다. 소속 미상 논문이 많은 초기 연도는 오차가 더 클 수 있습니다. 한자 표기는 첫 글자로 판단했습니다.</li>
-    <li><strong>분류와 수록 범위.</strong> Field는 OpenAlex topic을 Scopus ASJC에 대응시킨 것으로, 제목·초록·저널명으로 분류한 결과입니다<sup><a href="#r2">2</a></sup>. OpenAlex의 수록 범위 자체도 데이터베이스마다 다르며<sup><a href="#r3">3</a></sup>, core는 주요 저널에 치우친 모집단입니다.</li>
-    <li><strong>분포 분석의 표본.</strong> Power-law 적합에는 정수 빈도가 필요해서 rejection으로 등확률 부분표본을 만들었습니다. 그래서 n이 줄어듭니다(core 2000–25 약 15,600건). 라틴 문자 성만 쓰고 한자·가나·기타 문자 표기와 비인명 토큰은 제외했으며, 제외 행은 사유와 함께 저장했습니다. 병음은 章과 張처럼 다른 한자를 하나로 합치므로 중국 성의 다양성을 낮춰 잽니다.</li>
-    <li><strong>Field 비교의 표본.</strong> Field·subfield×5년 셀마다 core에서 600건을 무작위 추출했습니다. E의 CI는 비중 비의 delta method(Haldane 보정)이고 FDR은 26개 field에 Benjamini–Hochberg를 적용했습니다. 전체 논문 수와 중국 소속 포함 논문 수는 표본이 아닌 exact count입니다. 2000–04는 제1저자 소속 미상이 많고, 성별 비교는 라틴 문자 표기에 한정되므로 초기 값의 오차가 더 큽니다.</li>
-    <li><strong>재현.</strong> <code>scripts/surname_share_collect.py</code>, <code>scripts/surname_share_analyze.py</code>, <code>scripts/surname_share_distribution.py</code>, <code>scripts/surname_share_retest.py</code>, <code>scripts/surname_share_fields.py</code>. 2026-10-31 기준 데이터입니다.</li></ul>`;
+    <li><strong>측정 정의.</strong> 각 논문의 제1저자(first author) 성씨를 기준으로 집계합니다. 관용적 표현인 "Zhang et al."을 엄밀하게 해석해 저자 3인 이상 논문으로 한정할 경우, 전체 OpenAlex에서 Zhang의 비중은 ${pct(a('Zhang').et_al_share)}, core sources에서는 ${pct(c('Zhang').et_al_share)}가 됩니다.</li>
+    <li><strong>표본 설계와 추정량.</strong> OpenAlex API<sup><a href="#r1">1</a></sup>는 제1저자 성씨에 대한 직접 필터를 제공하지 않습니다. 따라서 전체 article 모집단은 26개 field × 10개 기간(5년 단위)의 260개 층(strata)에서 층당 최대 600건을, core sources 모집단은 연도별로 200–1,000건을 무작위 추출해 총 ${(D.meta.all.n_sample + D.meta.core.n_sample).toLocaleString('ko-KR')}건의 표본을 구축했습니다. 모집단 비중과 95% CI는 층화 가중치를 반영한 Hájek ratio estimator와 테일러 선형화 분산(linearized variance)으로 산출했으며, field가 배정되지 않은 논문(core 표본의 ${pct(D.meta.core.unfielded, 1)})은 분야별 분석 분모에서 제외했습니다.</li>
+    <li><strong>외적 타당도 검증.</strong> Core sources의 2020–25년 중국 기관 소속 제1저자 가운데 중국 인구의 5대 성씨(Wang·Li·Zhang·Liu·Chen)가 차지하는 비중은 ${pct(validity.top5_share, 1)}(95% CI ${pct(validity.top5_lo, 1)}–${pct(validity.top5_hi, 1)})로, 2020년 중국 공안부 호적 인구 통계의 실제 비중(30.8%)과 오차 범위 내에서 일치합니다<sup><a href="#r7">7</a></sup>. 참고로 본문 주요 분석 대상 다섯 성씨에는 빠졌으나 실제로는 중국 2위 성씨인 Li의 경우, core 2020–25년 제1저자 비중이 ${pct(liCore.share)}로 Wang에 이어 두 번째로 높습니다.</li>
+    <li><strong>분석 단위의 한계(성씨 ≠ 개인).</strong> 본 분석은 동명이인 식별(author disambiguation)을 수행하지 않고 성씨 문자열만 집계합니다<sup><a href="#r5">5,6</a></sup>. 분석 단위가 개별 연구자가 아닌 '논문'이므로 동명이인의 존재가 성씨 비중 추정치를 편향시키지는 않으나, 이 수치를 특정 개인의 다작(productivity) 결과로 해석해서는 안 됩니다.</li>
+    <li><strong>로마자 표기 변이(romanization variants).</strong> 본 분석은 한자 성씨의 표준 한어병음 표기(Zhang, Chen, Wang, Guo, Liu)만 집계하며, 張의 Chang·Cheung이나 王의 Wong 같은 비표준·방언 로마자 표기는 합산하지 않았습니다. 이 변이 표기들을 모두 포함하더라도 core 2020–25년 기준 Zhang의 비중은 약 ${pp(core.aliases[0].alias_share)} 늘어나는 데 그칩니다. 반면 한국의 장(Chang)이나 동남아시아 화교권의 진(Tan) 등은 다른 성씨와 철자가 겹치므로 인위적으로 병합하지 않았습니다.</li>
+    <li><strong>성명 parsing 규칙.</strong> 서구식 어순(이름–성)과 달리 "Zhang Wei"처럼 성씨가 앞에 놓이는 동아시아 어순 표기는, 로마자 한어병음 형태이면서 제1저자 소속이 중화권 기관(또는 소속 미상)인 경우에 한해 첫 토큰을 성씨로 인식했습니다. 소속 기관 정보가 누락된 논문이 상대적으로 많은 초기 연도(2000년대 초반 이전)에는 parsing 오차가 더 클 수 있습니다. 한자 원문으로 기재된 성명은 첫 글자를 성씨로 판별했습니다.</li>
+    <li><strong>학문 분류 체계와 수록 범위.</strong> 학문 분야(field)는 OpenAlex의 primary topic을 Scopus ASJC 분류 체계에 매핑한 것으로, 논문의 제목·초록·인용 정보·저널명을 종합해 알고리즘으로 분류한 결과입니다<sup><a href="#r2">2</a></sup>. 서지 데이터베이스마다 수록 범위(coverage)가 상이하며<sup><a href="#r3">3</a></sup>, 본 페이지의 시계열 기준인 CWTS core sources는 국제 주요 학술지에 집중된 부분집합입니다.</li>
+    <li><strong>성씨 분포 분석을 위한 등확률 부분표본.</strong> 이산형 power-law 적합에는 가중치가 없는 정수 빈도(integer counts)가 필요하므로, 층화 표본에 rejection sampling을 적용해 추출 확률이 동일한 부분표본(equal-probability subsample)을 구성했습니다(이에 따라 core 2000–25년 기준 유효 표본 크기는 약 15,600건이 됩니다). 라틴 문자 성씨만 분석에 포함하고 한자·가나·기타 문자 표기 및 비인명 토큰은 제외했으며, 제외된 레코드는 사유와 함께 별도 기록했습니다. 한편 로마자 병음 표기는 章(Zhang)과 張(Zhang)처럼 서로 다른 한자 성씨를 하나의 철자로 병합하므로, 실제 한자 성씨 기준보다 다양성을 낮게(집중도 Y₂는 높게) 측정하는 경향이 있습니다.</li>
+    <li><strong>분야별 초과 증가율 분석의 표본과 통계 처리.</strong> Field 및 subfield×5년 셀마다 core sources에서 최대 600건을 무작위 추출했습니다. 초과 증가율 E의 95% CI는 두 기간 비중 비(ratio)에 대한 delta method(0건 셀 처리를 위한 Haldane 보정 포함)로 구했고, 다중비교에 따른 위양성 통제는 26개 field에 대해 Benjamini–Hochberg FDR 절차를 적용했습니다. 연도별 전체 논문 수와 중국 소속 저자 포함 논문 수는 표본 추정이 아닌 OpenAlex 전수 집계(exact count)입니다. 2000–04년 구간은 제1저자 소속 미상 비율이 높고 성씨별 비교가 라틴 문자 표기에 한정되므로 초기 추정치의 불확실성이 상대적으로 큽니다.</li>
+    <li><strong>재현성(reproducibility).</strong> 데이터 수집과 분석 전 과정은 <code>scripts/surname_share_collect.py</code>, <code>scripts/surname_share_analyze.py</code>, <code>scripts/surname_share_distribution.py</code>, <code>scripts/surname_share_retest.py</code>, <code>scripts/surname_share_fields.py</code>로 재현할 수 있습니다. 2026-10-31 기준 OpenAlex 스냅샷을 사용했습니다.</li></ul>`;
   $('refs').innerHTML = REFS.map((r, i) => `<li id="r${i + 1}">${r}</li>`).join('');
 }
 

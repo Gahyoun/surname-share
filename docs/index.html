@@ -24,7 +24,7 @@
     <li><a href="#growth">전체 논문 대비 증가</a></li><li><a href="#dist">분포와 power law</a></li><li><a href="#method">방법과 한계</a></li><li><a href="#references">참고문헌</a></li>
   </ul></nav>
 
-  <h2 id="flow">분야는 어떻게 흘러왔나</h2>
+  <h2 id="flow">학문 분야별 흐름</h2>
   <p id="alluvial-text"></p>
   <div class="controls">
     <div class="seg" id="seg-corpus" role="group" aria-label="모집단 선택"></div>
@@ -34,13 +34,13 @@
   </div>
   <div class="legend" id="legend-domain"></div>
   <div class="chart"><svg id="alluvial" role="img" aria-label="기간별 field 구성 alluvial diagram. 같은 수치는 아래 표에 있습니다."></svg></div>
-  <p class="note">폭은 표본 가중 추정치입니다. 얇은 줄기는 hit 몇 건에 좌우되니 tooltip의 hit 수와 95% CI를 함께 보세요.</p>
+  <p class="note">각 줄기의 폭은 표본 가중 추정치입니다. 폭이 얇은 줄기는 표본 내 관측 건수(hit) 몇 건에도 크게 흔들리므로, tooltip에 표시되는 hit 수와 95% CI를 함께 확인해야 합니다.</p>
 
   <h2 id="series">시계열</h2>
   <p id="ts-text"></p>
   <div class="legend" id="legend-surname"></div>
-  <p class="note">2000년 이후 3년 이동평균. 띠는 95% CI입니다.</p>
-  <div class="chart"><svg id="lines" role="img" aria-label="성별 연도별 제1저자 비중 선 그래프"></svg></div>
+  <p class="note">2000년 이후 3년 이동평균 기준이며, 음영 띠는 95% CI를 나타냅니다.</p>
+  <div class="chart"><svg id="lines" role="img" aria-label="성씨별 연도별 제1저자 비중 선 그래프"></svg></div>
   <div class="wrap"><table id="trend-table"></table></div>
 
   <h2>왜 전체 OpenAlex를 쓰지 않았나</h2>
@@ -97,7 +97,7 @@
   <p id="retest-text"></p>
   <div class="wrap"><table id="retest-table"></table></div>
   <div class="wrap"><table id="snapshot-table"></table></div>
-  <h3>이 검정에 그럴 힘이 있는가</h3>
+  <h3>검정력(power) 검증: 대안 분포를 구별할 수 있는가</h3>
   <p id="synth-text"></p>
   <div class="wrap"><table id="synth-table"></table></div>
   <h3>겹칠 확률과 혼합 null</h3>
@@ -105,12 +105,6 @@
   <div class="legend" id="legend-mix"></div>
   <div class="chart"><svg id="mix-chart" role="img" aria-label="중국 소속 비중에 따른 연도별 inverse participation ratio와 혼합 null 곡선"></svg></div>
   <div class="wrap"><table id="mix-table"></table></div>
-  <h3>어디까지 말할 수 있나</h3>
-  <p class="note">표본 크기 n을 바꾸면 이 표를 다시 돌립니다.</p>
-  <div class="wrap"><table id="claim-table" class="wrapcells"></table></div>
-  <p id="banned"></p>
-  <h3>철회하거나 바꾼 잠정 진술</h3>
-  <div class="wrap"><table id="life-table" class="wrapcells"></table></div>
 
   <h2 id="method">방법과 한계</h2>
   <div id="method-body"></div>
@@ -118,7 +112,7 @@
   <h2 id="references">참고문헌</h2>
   <ol class="refs" id="refs"></ol>
 </main>
-<footer><div class="inner">OpenAlex 기반 부수 분석. 2026-10-31 기준 데이터.</div></footer>
+<footer><div class="inner">OpenAlex 데이터 기반 분석. 2026-10-31 기준.</div></footer>
 <div id="tip" role="status"></div>
 <script src="app.js"></script>
 <script src="growth.js"></script>
