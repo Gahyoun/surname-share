@@ -13,6 +13,7 @@ python scripts/surname_share_analyze.py
 python scripts/surname_share_distribution.py
 python scripts/surname_share_retest.py
 python scripts/surname_share_fields.py
+python scripts/surname_share_common.py
 ```
 
 The analysis needs `numpy`, `pandas` and `scipy`. Raw samples are written to `data/`, which is not committed. Results are a snapshot from 2026-10-31.

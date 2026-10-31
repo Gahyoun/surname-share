@@ -53,7 +53,7 @@ function legend(host, items) {
   host.innerHTML = items.map(([label, color]) => `<span><i style="background:var(${fillOf(color)});border-color:var(${color})"></i>${esc(label)}</span>`).join('');
 }
 
-Promise.all(['data.json', 'distribution.json', 'fields.json', 'retest.json'].map(f => fetch(f).then(r => r.json()))).then(([D, X, F, R]) => { init(D); renderDistribution(X, R, F); renderGrowth(F); renderRetest(R, X); bindMode(); });
+Promise.all(['data.json', 'distribution.json', 'fields.json', 'retest.json', 'common.json'].map(f => fetch(f).then(r => r.json()))).then(([D, X, F, R, C]) => { init(D); renderDistribution(X, R, F, C); renderGrowth(F); renderRetest(R, X); renderCommon(C); bindMode(); });
 
 function init(D) {
   const C = D.corpora;
@@ -183,8 +183,8 @@ function smooth(rows) {
   });
 }
 
-function lineChart(svg, { series, W = 1000, H = 400, tip: tipText, tick, format }) {
-  const m = { t: 14, r: 96, b: 28, l: 54 };
+function lineChart(svg, { series, W = 1000, H = 400, tip: tipText, tick, format, right = 96 }) {
+  const m = { t: 14, r: right, b: 28, l: 54 };
   const years = series[0].rows.map(r => r.year);
   const yMax = Math.ceil(Math.max(...series.flatMap(s => s.rows.map(r => r.hi ?? r.share))) / tick) * tick;
   const x = v => m.l + (v - years[0]) * (W - m.l - m.r) / (years.at(-1) - years[0]);
@@ -205,7 +205,7 @@ function lineChart(svg, { series, W = 1000, H = 400, tip: tipText, tick, format 
     el('path', { d: `M${s.rows.map(r => `${x(r.year)},${y(r.share)}`).join('L')}`, fill: 'none', stroke: css(s.color), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dash || 'none' }, svg);
   });
   const labels = series.map(s => ({ s: s.label, y: y(s.rows.at(-1).share) + 4 })).sort((a, b) => a.y - b.y);
-  labels.forEach((l, i) => { if (i && l.y - labels[i - 1].y < 14) l.y = labels[i - 1].y + 14; });
+  labels.forEach((l, i) => { if (i && l.y - labels[i - 1].y < 18) l.y = labels[i - 1].y + 18; });
   labels.forEach(l => { el('text', { x: W - m.r + 7, y: l.y, class: 'strong' }, svg).textContent = l.s; });
   const cross = el('line', { y1: m.t, y2: H - m.b, stroke: css('--gk-text-subtle'), 'stroke-width': 1, visibility: 'hidden' }, svg);
   const hit = el('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent' }, svg);
@@ -257,7 +257,7 @@ const SYNTH_KO = { power: 'Power law', lognormal: 'Lognormal', mixture: '혼합 
 const num = (x, d = 2) => (x === null || x === undefined ? '—' : x.toFixed(d));
 const pval = p => (p < 0.001 ? '<0.001' : p.toFixed(3));
 
-function renderDistribution(X, R, F) {
+function renderDistribution(X, R, F, C) {
   const fit = name => X.tails.find(t => t.name === name);
   const pooled = fit('Core 2000-2025'), china = fit('Core, China'), other = fit('Core, non-China');
   const syn = k => X.synthetic.find(s => s.kind === k);

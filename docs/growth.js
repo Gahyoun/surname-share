@@ -10,7 +10,7 @@ const pp1 = (x, d = 1) => `${(100 * x).toFixed(d)}%`;
 const period = p => p.replace('-', '–').replace(/(\d{4})–\d{2}(\d{2})/, '$1–$2');
 const ko = n => n.toLocaleString('ko-KR');
 
-let drawIndex = () => {}, drawForest = () => {}, drawCollapse = () => {}, drawPredict = () => {};
+let drawIndex = () => {}, drawForest = () => {}, drawCollapse = () => {}, drawPredict = () => {}, drawCommon = () => {}, drawCommonForest = () => {};
 
 function renderGrowth(F) {
   const fields = F.growth.filter(g => g.level === 'field');
@@ -175,6 +175,78 @@ function renderGrowth(F) {
   $('cluster-text').textContent = `추가로 26개 field의 시기별 비중 변화 궤적(trajectory) 형태를 기준으로 비지도 학습인 Ward clustering을 수행해 보았습니다. 외형상으로는 silhouette 점수 기준 ${K.k}개 군집(군집별 크기 ${sizes.join('·')}개, silhouette=${K.silhouette.toFixed(2)})이 도출됩니다. 그러나 "모든 field가 동일한 단일 평균 궤적을 따르고 오직 유한 표본 추출 잡음만 존재한다"는 귀무가설(null model) 하에서 시뮬레이션을 수행해도 silhouette 점수의 중앙값이 ${K.null_median.toFixed(2)}(p=${pval(K.null_p)})에 달해, 관측된 군집 구조는 무작위 표본 잡음과 전혀 구분되지 않습니다. 통계적 실체가 없는 군집에 사후적으로 이름을 붙이거나 목록을 제시하는 것은 전형적인 과적합(overfitting) 해석을 유발하므로, 본 페이지에서는 군집 분류표를 의도적으로 수록하지 않았습니다.`;
 }
 
+function renderCommon(C) {
+  const O = C.overall, H = C.hetero, ml = C.ml;
+  const row = label => O.rows.find(r => r.group === label);
+  const top = row(`중국계 상위 ${C.primary}`), rest = row('그 외 상위 100'), kr = row('한국계 8개'), ind = row('인도계 8개'), spec = row('상위 100 중 특이도 높은 성'), variant = row('상위 100 + 표기 변형');
+  const fieldRows = C.fields.filter(f => f.level === 'field').sort((a, b) => b.e - a.e);
+  const subs = C.fields.filter(f => f.level === 'subfield').sort((a, b) => b.e - a.e);
+  const pi = k => O.series.find(s => s.year === k).pi;
+  $('common-lede').innerHTML = `<strong>중국 소속 저자에게 흔한 상위 ${C.primary}개 성은 ${O.first}년 core 제1저자의 ${pp1(top.share_first)}에서 ${O.last}년 ${pp1(top.share_last)}로 늘었습니다.</strong> 논문 수로는 ${times(top.growth)}로, 전체 논문의 ${times(O.growth_all)}보다 약 ${top.e.toFixed(1)}배(95% CI ${top.lo.toFixed(1)}–${top.hi.toFixed(1)}) 빠릅니다. 연 ${pp1(top.annual)}씩 전체보다 앞선 셈입니다. 같은 기간 그 외 상위 100개 성의 E는 ${rest.e.toFixed(2)}로 전체보다 느렸습니다. 다만 초과 증가는 중국 소속 저자 쪽에서 나타나고, 중국 밖 소속 저자 안에서 이 성들의 비중은 ${pp1(top.outside_first)}에서 ${pp1(top.outside_last)}로 거의 그대로입니다.`;
+  $('common-tiles').innerHTML = [
+    [times(O.growth_all), '전체 논문', `${O.first}→${O.last}, exact count`, '--viz-phys'],
+    [times(top.growth), `중국계 상위 ${C.primary}개 성`, `비중 ${pp1(top.share_first)} → ${pp1(top.share_last)}`, '--viz-chen'],
+    [top.e.toFixed(1), '초과 증가율 E', `95% CI ${top.lo.toFixed(1)}–${top.hi.toFixed(1)}`, '--viz-guo'],
+    [top.outside_e.toFixed(2), '중국 밖 소속 안의 E', `95% CI ${top.outside_lo.toFixed(2)}–${top.outside_hi.toFixed(2)}`, '--viz-wang'],
+  ].map(([v, a, b, c]) => `<div class="tile" style="--tile:var(${c})"><span>${a}</span><b>${v}</b><small>${b}</small></div>`).join('');
+  $('common-def').textContent = `Zhang·Chen·Wang·Guo·Liu에는 중국에서 두 번째로 흔한 Li조차 빠져 있습니다. 그래서 성 목록을 손으로 고르지 않고, pooled core 표본의 중국 소속 제1저자(n=${ko(C.within.n_china)})에서 빈도순으로 뽑았습니다. 상위 5개가 중국 소속 제1저자의 ${pp1(C.coverage[5], 0)}, 20개가 ${pp1(C.coverage[20], 0)}, ${C.primary}개가 ${pp1(C.coverage[C.primary], 0)}를 차지해서, 주 분석은 상위 ${C.primary}개로 했습니다. 증가는 목록을 뽑은 표본이 아니라 연도별 core 표본(시점당 약 1만 건)과 field 표본에서 쟀기 때문에, 성을 고른 과정이 E를 부풀리지 않습니다.`;
+  $('common-trend').textContent = `2000년의 소속 확인 제1저자 중 중국 소속은 ${pp1(pi(O.first))}, ${O.last}년에는 ${pp1(pi(O.last))}입니다. 상위 ${C.primary}개 성의 비중은 이 곡선을 따라 움직입니다. 집합을 5개에서 ${C.primary}개로 넓혀도 E는 ${Math.min(...[5, 10, 20, 50, 100].map(k => row(`중국계 상위 ${k}`).e)).toFixed(1)}–${Math.max(...[5, 10, 20, 50, 100].map(k => row(`중국계 상위 ${k}`).e)).toFixed(1)} 범위에 머뭅니다. 비교군을 보면 그 외 상위 100개 성은 ${rest.e.toFixed(2)}, 한국계 8개 성은 ${kr.e.toFixed(2)}, 인도계 8개 성은 ${ind.e.toFixed(2)}입니다. 성 목록의 모호함을 줄인 두 민감도도 결론을 바꾸지 않습니다. 중국 소속 비율 ${pp1(C.specific, 0)} 이상인 성만 남기면 E는 ${spec.e.toFixed(1)}, Chang·Wong·Hsu 같은 표기 변형을 더하면 ${variant.e.toFixed(1)}입니다.`;
+  const series = [
+    { label: `중국계 상위 ${C.primary}`, color: COLOR.Chen, key: top.group },
+    { label: '중국 소속 비중 π', color: '--gk-text-bolder', dash: '6 4', key: 'pi' },
+    { label: '중국 밖 소속 안', color: COLOR.Wang, key: `${top.group}|outside` },
+    { label: '그 외 상위 100', color: COLOR.Zhang, key: rest.group },
+    { label: '인도계 8개', color: COLOR.Guo, key: ind.group },
+    { label: '한국계 8개', color: COLOR.Liu, key: kr.group },
+  ].map(s => ({ ...s, rows: O.series.map(r => ({ year: r.year, share: r[s.key] })) }));
+  legend($('legend-common'), series.map(s => [s.label, s.color]));
+  drawCommon = () => lineChart($('common-chart'), {
+    series, H: 420, tick: 0.05, right: 150,
+    tip: year => {
+      const near = series[0].rows.reduce((a, r) => (Math.abs(r.year - year) < Math.abs(a.year - year) ? r : a)).year;
+      return `<b>${near}</b><br>${series.map(s => `${s.label} ${pp1(s.rows.find(r => r.year === near).share)}`).join('<br>')}`;
+    },
+  });
+  drawCommon();
+  $('common-table').innerHTML = `<thead><tr><th scope="col">성 집합</th><th scope="col">성 수</th><th scope="col">${O.first} 비중</th><th scope="col">${O.last} 비중</th><th scope="col">논문 수 증가</th><th scope="col">E (95% CI)</th><th scope="col">중국 밖 소속 안의 E</th></tr></thead><tbody>${O.rows.map(r => `<tr><td>${esc(r.group)}</td><td>${r.size}</td><td>${pp1(r.share_first)}</td><td>${pp1(r.share_last)}</td><td>${times(r.growth)}</td><td>${r.e.toFixed(2)} (${r.lo.toFixed(2)}–${r.hi.toFixed(2)})</td><td>${r.outside_e.toFixed(2)} (${r.outside_lo.toFixed(2)}–${r.outside_hi.toFixed(2)})</td></tr>`).join('')}</tbody>`;
+
+  $('common-field-text').textContent = `${H.n}개 field 전부에서 E의 95% CI 하한이 1을 넘고, random-effects 평균은 ${H.mean_e.toFixed(1)}(${H.mean_lo.toFixed(1)}–${H.mean_hi.toFixed(1)})입니다. 성을 100개로 넓히니 hit가 늘어 다섯 성에서는 보이지 않던 field 차이가 드러납니다(Q=${H.Q.toFixed(1)}, df ${H.df}, p=${pval(H.p)}, I²=${pp1(H.I2, 0)}). 이 차이의 상당 부분은 출발점입니다. 2000–04년 비중이 높은 분야일수록 E가 낮습니다(Spearman ρ=${H.early_rho.toFixed(2)}, p=${pval(H.early_p)}). E에는 1/s라는 상한이 있어서, 이미 비중이 큰 분야는 같은 속도로 늘 수 없습니다. ML 근사는 비중이 ${pp1(ml.share_early)}에서 ${pp1(ml.share_late)}로 절대 수준이 가장 높은 축에 들지만, E는 ${ml.e.toFixed(2)}(${ml.lo.toFixed(2)}–${ml.hi.toFixed(2)})로 평균보다 낮습니다. 빈 마름모는 π만 바꾼 구성 null이고, ${H.n}개 중 ${H.null_inside}개 field의 CI 안에 듭니다(E/E_null 중앙값 ${H.ratio_median.toFixed(2)}). 분야 전체 증가율과 E의 관계는 뚜렷하지 않습니다(ρ=${H.growth_rho.toFixed(2)}, p=${pval(H.growth_p)}).`;
+  drawCommonForest = () => {
+    const svg = $('common-forest');
+    const rows = [{ ...ml, ml: true }, ...fieldRows].sort((a, b) => b.e - a.e);
+    const W = 1000, step = 27, m = { t: 28, r: 40, b: 34, l: 320 }, height = m.t + m.b + step * rows.length, lo = 0.7, hi = 32;
+    const x = v => m.l + Math.log(Math.min(hi, Math.max(lo, v)) / lo) * (W - m.l - m.r) / Math.log(hi / lo);
+    svg.innerHTML = '';
+    svg.setAttribute('viewBox', `0 0 ${W} ${height}`);
+    svg.style.minWidth = '640px';
+    [1, 2, 4, 8, 16, 32].forEach(v => {
+      el('line', { x1: x(v), x2: x(v), y1: m.t, y2: height - m.b, stroke: css(v === 1 ? '--gk-text-bolder' : '--gk-border-light'), 'stroke-width': 1, 'stroke-dasharray': v === 1 ? '6 4' : 'none' }, svg);
+      el('text', { x: x(v), y: height - 12, 'text-anchor': 'middle' }, svg).textContent = v;
+    });
+    el('text', { x: x(1), y: 16, 'text-anchor': 'middle' }, svg).textContent = 'E = 1, 분야와 같은 속도';
+    el('line', { x1: x(H.mean_e), x2: x(H.mean_e), y1: m.t, y2: height - m.b, stroke: css('--viz-phys-ink'), 'stroke-width': 2 }, svg);
+    rows.forEach((r, i) => {
+      const y = m.t + step * i + step / 2, color = DOMAINS[FIELD_DOMAIN[r.name]]?.color ?? '--viz-chen-ink', ink = css(color);
+      const name = r.name.length > 34 ? `${r.name.slice(0, 33)}…` : r.name;
+      el('text', { x: m.l - 12, y: y + 5, 'text-anchor': 'end', class: r.ml ? 'strong' : '' }, svg).textContent = name;
+      el('line', { x1: x(r.lo), x2: x(r.hi), y1: y, y2: y, stroke: ink, 'stroke-width': 2 }, svg);
+      el('circle', { cx: x(r.e), cy: y, r: 6, fill: css(fillOf(color)), stroke: ink, 'stroke-width': 2 }, svg);
+      if (r.e_null) el('path', { d: `M${x(r.e_null)},${y - 6}l6,6l-6,6l-6,-6Z`, fill: 'none', stroke: css('--gk-text-bolder'), 'stroke-width': 1.5 }, svg);
+      const hit = el('rect', { x: 0, y: y - step / 2, width: W, height: step, fill: 'transparent' }, svg);
+      hit.addEventListener('mousemove', event => showTip(event, `<b>${esc(r.name)}</b><br>분야 전체 ${times(r.growth_all)}<br>비중 ${pp1(r.share_early)} → ${pp1(r.share_late)}<br>E ${r.e.toFixed(2)} (${r.lo.toFixed(2)}–${r.hi.toFixed(2)})${r.e_null ? `<br>구성 null ${r.e_null.toFixed(2)}` : ''}`));
+      hit.addEventListener('mouseleave', hideTip);
+    });
+  };
+  drawCommonForest();
+  const fieldRow = f => `<tr><td>${esc(f.name)}</td><td>${times(f.growth_all)}</td><td>${pp1(f.share_early)} → ${pp1(f.share_late)}</td><td>${f.e.toFixed(2)} (${f.lo.toFixed(2)}–${f.hi.toFixed(2)})</td><td>${f.e_null ? f.e_null.toFixed(2) : '—'}</td></tr>`;
+  $('common-field-table').innerHTML = `<thead><tr><th scope="col">분야</th><th scope="col">전체 증가</th><th scope="col">비중, 2000–04 → 2020–25</th><th scope="col">E (95% CI)</th><th scope="col">구성 null</th></tr></thead><tbody>${fieldRow(ml)}${subs.map(fieldRow).join('')}${fieldRows.map(fieldRow).join('')}</tbody>`;
+
+  const sorted = C.surnames.slice().sort((a, b) => b.e - a.e);
+  $('common-surname-text').textContent = `상위 20개 성은 빈도순으로 실었습니다. 성 하나의 hit는 수십 건이라 CI가 넓고 대부분 서로 겹칩니다. 표에서 E가 가장 큰 ${sorted[0].surname}의 ${O.first}년 hit는 ${sorted[0].hits_first}건뿐이므로, 성 사이의 순위는 해석하지 않습니다.`;
+  $('common-surname-table').innerHTML = `<thead><tr><th scope="col">성</th><th scope="col">중국 소속 빈도 순위</th><th scope="col">${O.first} hit</th><th scope="col">${O.last} hit</th><th scope="col">E (95% CI)</th></tr></thead><tbody>${C.surnames.map(r => `<tr><td>${r.surname}</td><td>${r.rank}</td><td>${r.hits_first}</td><td>${r.hits_last}</td><td>${r.e.toFixed(1)} (${r.lo.toFixed(1)}–${r.hi.toFixed(1)})</td></tr>`).join('')}</tbody>`;
+  $('common-limit').textContent = `성은 국적도 민족도 아닙니다. Lin, Tan, Yu 같은 성은 다른 문화권에도 있고, 표기가 같은 다른 한자를 구분하지 못합니다. "중국 밖 소속 안의 E"는 소속 기록만 나눈 값이라 해외 중국계 연구자의 수나 이주를 재지 않습니다. 이 값이 1에 가깝다는 것은 그 집단이 늘지 않았다는 뜻이 아니라, 중국 밖 저자 전체와 같은 속도로 늘었다는 뜻입니다. 2000년에는 제1저자의 약 ${pp1(1 - 0.759, 0)}가 소속 미상이라 이 값의 분모에서 빠졌습니다. 또한 core sources는 수록 범위가 바뀌는 모집단이므로, E는 중국 연구 활동량의 직접 측정이 아니라 이 색인에서의 비중 변화입니다. 표본이 시점당 약 1만 건이라 CI가 남아 있지만, 전수 집계로 바꿔도 줄어드는 것은 이 표본오차뿐입니다.`;
+}
+
 function renderRetest(R, X) {
   const fit = g => R.fits.find(f => f.group === g);
   const china = fit('China'), other = fit('non-China'), pooled = fit('Pooled'), O = R.out_of_sample;
@@ -190,7 +262,7 @@ function bindMode() {
   const apply = high => {
     root.dataset.krdsMode = high ? 'high-contrast' : 'light';
     button.setAttribute('aria-pressed', high);
-    [drawAlluvial, drawLines, drawCoverage, drawRank, drawMix, drawIndex, drawForest, drawCollapse, drawPredict].forEach(f => f());
+    [drawAlluvial, drawLines, drawCoverage, drawRank, drawMix, drawIndex, drawForest, drawCollapse, drawPredict, drawCommon, drawCommonForest].forEach(f => f());
   };
   let saved = null;
   try { saved = localStorage.getItem('krds-mode'); } catch (e) { saved = null; }
