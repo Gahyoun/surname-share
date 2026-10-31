@@ -1,14 +1,15 @@
 const SURNAMES = ['Zhang', 'Chen', 'Wang', 'Guo', 'Liu'];
-const COLOR = { Zhang: '--s-zhang', Chen: '--s-chen', Wang: '--s-wang', Guo: '--s-guo', Liu: '--s-liu' };
+const COLOR = { Zhang: '--viz-zhang-ink', Chen: '--viz-chen-ink', Wang: '--viz-wang-ink', Guo: '--viz-guo-ink', Liu: '--viz-liu-ink' };
 const DOMAINS = {
-  'Physical Sciences': { color: '--d-phys', fields: ['Engineering', 'Computer Science', 'Materials Science', 'Environmental Science', 'Physics and Astronomy', 'Chemistry', 'Mathematics', 'Earth and Planetary Sciences', 'Energy', 'Chemical Engineering'] },
-  'Life Sciences': { color: '--d-life', fields: ['Biochemistry, Genetics and Molecular Biology', 'Agricultural and Biological Sciences', 'Neuroscience', 'Immunology and Microbiology', 'Pharmacology, Toxicology and Pharmaceutics'] },
-  'Health Sciences': { color: '--d-health', fields: ['Medicine', 'Health Professions', 'Nursing', 'Dentistry', 'Veterinary'] },
-  'Social Sciences': { color: '--d-soc', fields: ['Social Sciences', 'Psychology', 'Business, Management and Accounting', 'Economics, Econometrics and Finance', 'Decision Sciences', 'Arts and Humanities'] },
+  'Physical Sciences': { color: '--viz-phys-ink', fields: ['Engineering', 'Computer Science', 'Materials Science', 'Environmental Science', 'Physics and Astronomy', 'Chemistry', 'Mathematics', 'Earth and Planetary Sciences', 'Energy', 'Chemical Engineering'] },
+  'Life Sciences': { color: '--viz-life-ink', fields: ['Biochemistry, Genetics and Molecular Biology', 'Agricultural and Biological Sciences', 'Neuroscience', 'Immunology and Microbiology', 'Pharmacology, Toxicology and Pharmaceutics'] },
+  'Health Sciences': { color: '--viz-health-ink', fields: ['Medicine', 'Health Professions', 'Nursing', 'Dentistry', 'Veterinary'] },
+  'Social Sciences': { color: '--viz-soc-ink', fields: ['Social Sciences', 'Psychology', 'Business, Management and Accounting', 'Economics, Econometrics and Finance', 'Decision Sciences', 'Arts and Humanities'] },
 };
 const FIELD_DOMAIN = {};
 Object.entries(DOMAINS).forEach(([d, v]) => v.fields.forEach(f => { FIELD_DOMAIN[f] = d; }));
 
+const fillOf = name => name.replace('-ink', '');
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const $ = id => document.getElementById(id);
 const pct = (x, d = 2) => `${(100 * x).toFixed(d)}%`;
@@ -49,10 +50,10 @@ function segmented(host, options, value, onChange) {
 }
 
 function legend(host, items) {
-  host.innerHTML = items.map(([label, color]) => `<span><i style="background:var(${color})"></i>${esc(label)}</span>`).join('');
+  host.innerHTML = items.map(([label, color]) => `<span><i style="background:var(${fillOf(color)});border-color:var(${color})"></i>${esc(label)}</span>`).join('');
 }
 
-Promise.all(['data.json', 'distribution.json'].map(f => fetch(f).then(r => r.json()))).then(([D, X]) => { init(D); renderDistribution(X); });
+Promise.all(['data.json', 'distribution.json', 'fields.json', 'retest.json'].map(f => fetch(f).then(r => r.json()))).then(([D, X, F, R]) => { init(D); renderDistribution(X, R, F); renderGrowth(F); renderRetest(R, X); bindMode(); });
 
 function init(D) {
   const C = D.corpora;
@@ -64,14 +65,13 @@ function init(D) {
   renderDecomposition(C.core);
   renderFields(D);
   renderProse(D);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { drawAlluvial(); drawLines(); drawCoverage(); drawRank(); drawMix(); });
 }
 
 function renderHeadline(D) {
   const find = (c, s) => D.corpora[c].overall.find(d => d.surname === s);
   $('tiles').innerHTML = ['All five', ...SURNAMES].map(s => {
     const a = find('all', s), c = find('core', s);
-    return `<div class="tile"><span>${s === 'All five' ? '다섯 성 합계' : `${s}`}</span><b>${pct(a.share)}</b>
+    return `<div class="tile"${s === 'All five' ? '' : ` style="--tile:var(${fillOf(COLOR[s])})"`}><span>${s === 'All five' ? '다섯 성 합계' : `${s}`}</span><b>${pct(a.share)}</b>
       <small>전체 ≈ ${millions(a.papers)}편</small><small>core 2020–25: ${pct(c.recent_share)}</small></div>`;
   }).join('');
   const m = D.meta;
@@ -126,14 +126,14 @@ function renderAlluvial(D) {
       return spans;
     });
     order.forEach(f => {
-      const color = css(DOMAINS[FIELD_DOMAIN[f]].color);
+      const color = css(DOMAINS[FIELD_DOMAIN[f]].color), fill = css(fillOf(DOMAINS[FIELD_DOMAIN[f]].color));
       const group = el('g', { class: 'flow' }, svg);
       for (let i = 0; i < periods.length - 1; i += 1) {
         const a = layout[i][f], b = layout[i + 1][f];
         const x0 = colX(i) + nodeW, x1 = colX(i + 1), mx = (x0 + x1) / 2;
         el('path', {
           d: `M${x0},${a.y0} C${mx},${a.y0} ${mx},${b.y0} ${x1},${b.y0} L${x1},${b.y1} C${mx},${b.y1} ${mx},${a.y1} ${x0},${a.y1} Z`,
-          fill: color, 'fill-opacity': 0.34,
+          fill, 'fill-opacity': 0.8,
         }, group);
       }
       periods.forEach((p, i) => {
@@ -166,7 +166,7 @@ function renderAlluvial(D) {
     order.forEach(f => {
       const s = end[f], mid = (s.y0 + s.y1) / 2;
       if (s.y1 - s.y0 < 6 || mid - lastY < 13) return;
-      el('text', { x: colX(periods.length - 1) + nodeW + 6, y: mid + 4 }, svg).textContent = f.length > 30 ? `${f.slice(0, 29)}…` : f;
+      el('text', { x: colX(periods.length - 1) + nodeW + 6, y: mid + 4 }, svg).textContent = f.length > 26 ? `${f.slice(0, 25)}…` : f;
       lastY = mid;
     });
     applyHighlight(state.field);
@@ -183,8 +183,8 @@ function smooth(rows) {
   });
 }
 
-function lineChart(svg, { series, W = 1000, H = 400, tip: tipText, tick }) {
-  const m = { t: 14, r: 96, b: 28, l: 46 };
+function lineChart(svg, { series, W = 1000, H = 400, tip: tipText, tick, format }) {
+  const m = { t: 14, r: 96, b: 28, l: 54 };
   const years = series[0].rows.map(r => r.year);
   const yMax = Math.ceil(Math.max(...series.flatMap(s => s.rows.map(r => r.hi ?? r.share))) / tick) * tick;
   const x = v => m.l + (v - years[0]) * (W - m.l - m.r) / (years.at(-1) - years[0]);
@@ -193,21 +193,21 @@ function lineChart(svg, { series, W = 1000, H = 400, tip: tipText, tick }) {
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.style.minWidth = '640px';
   for (let v = 0; v <= yMax + 1e-9; v += tick) {
-    el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: css('--line'), 'stroke-width': 1 }, svg);
-    el('text', { x: m.l - 7, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = `${(v * 100).toFixed(tick < 0.01 ? 1 : 0)}%`;
+    el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: css('--gk-border-light'), 'stroke-width': 1 }, svg);
+    el('text', { x: m.l - 7, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = format ? format(v) : `${(v * 100).toFixed(tick < 0.01 ? 1 : 0)}%`;
   }
   years.filter(v => v % 5 === 0).forEach(v => { el('text', { x: x(v), y: H - 8, 'text-anchor': 'middle' }, svg).textContent = v; });
   series.forEach(s => {
     if (s.rows[0].lo !== undefined) {
       const band = [...s.rows.map(r => `${x(r.year)},${y(r.hi)}`), ...s.rows.slice().reverse().map(r => `${x(r.year)},${y(r.lo)}`)].join(' ');
-      el('polygon', { points: band, fill: css(s.color), 'fill-opacity': 0.07 }, svg);
+      el('polygon', { points: band, fill: css(s.color), 'fill-opacity': 0.1 }, svg);
     }
     el('path', { d: `M${s.rows.map(r => `${x(r.year)},${y(r.share)}`).join('L')}`, fill: 'none', stroke: css(s.color), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dash || 'none' }, svg);
   });
   const labels = series.map(s => ({ s: s.label, y: y(s.rows.at(-1).share) + 4 })).sort((a, b) => a.y - b.y);
   labels.forEach((l, i) => { if (i && l.y - labels[i - 1].y < 14) l.y = labels[i - 1].y + 14; });
   labels.forEach(l => { el('text', { x: W - m.r + 7, y: l.y, class: 'strong' }, svg).textContent = l.s; });
-  const cross = el('line', { y1: m.t, y2: H - m.b, stroke: css('--ink-3'), 'stroke-width': 1, visibility: 'hidden' }, svg);
+  const cross = el('line', { y1: m.t, y2: H - m.b, stroke: css('--gk-text-subtle'), 'stroke-width': 1, visibility: 'hidden' }, svg);
   const hit = el('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent' }, svg);
   hit.addEventListener('mousemove', event => {
     const box = svg.getBoundingClientRect();
@@ -239,8 +239,8 @@ function renderCoverage(D) {
   const exact = D.exact.filter(r => r.year >= 2000);
   const toRows = (num, den) => exact.map(r => ({ year: r.year, share: r[num] / r[den] }));
   const series = [
-    { label: 'Core', color: '--s-zhang', rows: toRows('core_cn', 'core_all') },
-    { label: '전체 OpenAlex', color: '--s-chen', dash: '6 4', rows: toRows('all_cn', 'n_articles') },
+    { label: 'Core', color: '--viz-zhang-ink', rows: toRows('core_cn', 'core_all') },
+    { label: '전체 OpenAlex', color: '--viz-chen-ink', dash: '6 4', rows: toRows('all_cn', 'n_articles') },
   ];
   legend($('legend-coverage'), series.map(s => [s.label, s.color]));
   drawCoverage = () => lineChart($('coverage'), {
@@ -257,7 +257,10 @@ const SYNTH_KO = { power: 'Power law', lognormal: 'Lognormal', mixture: '혼합 
 const num = (x, d = 2) => (x === null || x === undefined ? '—' : x.toFixed(d));
 const pval = p => (p < 0.001 ? '<0.001' : p.toFixed(3));
 
-function renderDistribution(X) {
+function renderDistribution(X, R, F) {
+  const retest = g => R.fits.find(f => f.group === g);
+  const oos = R.out_of_sample, snapN = R.snapshots.reduce((a, r) => a + r.n, 0);
+  const fieldRows = F.growth.filter(g => g.level === 'field'), comp = F.prediction.composition;
   const fit = name => X.tails.find(t => t.name === name);
   const pooled = fit('Core 2000-2025'), china = fit('Core, China'), other = fit('Core, non-China');
   const syn = k => X.synthetic.find(s => s.kind === k);
@@ -267,7 +270,7 @@ function renderDistribution(X) {
   const termTotal = terms.cc + terms.cross + terms.oo;
   const hillChina = X.concentration.at(-1).hill1_china, hillOther = X.concentration.at(-1).hill1_other;
 
-  $('dist-lede').innerHTML = `<strong>결론부터: 성 빈도는 exponential보다 확실히 두껍지만, power law라고 말할 근거는 없습니다.</strong> 이 표본 크기에서는 power-law 검정이 lognormal 모집단도 ${pct(syn('lognormal').reject_gof, 0)}만 기각해서, 기각되지 않았다는 사실이 거의 정보를 주지 않습니다. 대신 더 단단한 결과는 집중도 쪽에 있습니다. 두 논문의 제1저자 성이 겹칠 확률 $Y_2$의 증가는 중국 소속 비중 π 하나로 거의 재현됩니다.`.replace('$Y_2$', 'Y₂');
+  $('dist-lede').innerHTML = `<strong>결론부터: 성 빈도는 exponential보다 확실히 두껍지만, power law라고 말할 근거는 없습니다.</strong> 이 표본 크기에서는 power-law 검정이 lognormal 모집단도 ${pct(syn('lognormal').reject_gof, 0)}만 기각해서, 기각되지 않았다는 사실이 거의 정보를 주지 않습니다. 표본을 늘려 집단별로 다시 재도 사전 규칙의 판정은 "판정 불가"입니다. 대신 더 단단한 결과는 집중도 쪽에 있습니다. 두 논문의 제1저자 성이 겹칠 확률 $Y_2$의 증가는 중국 소속 비중 π 하나로 거의 재현됩니다.`.replace('$Y_2$', 'Y₂');
   $('dist-tiles').innerHTML = [
     [num(pooled.alpha), `Tail 지수 α`, `95% ${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)} · n=${pooled.n_authors.toLocaleString('ko-KR')}`],
     [pct(syn('lognormal').reject_gof, 0), 'Lognormal 기각력', `합성 ${syn('lognormal').reps}회 · GOF p<0.1`],
@@ -277,9 +280,9 @@ function renderDistribution(X) {
 
   // Rank-frequency on log-log axes.
   const seriesR = [
-    { label: 'Core 2000–25', color: '--d-phys', key: 'Core 2000-2025' },
-    { label: '중국 소속', color: '--d-health', key: 'Core, China' },
-    { label: '그 외', color: '--d-life', key: 'Core, non-China' },
+    { label: 'Core 2000–25', color: '--viz-phys-ink', key: 'Core 2000-2025' },
+    { label: '중국 소속', color: '--viz-health-ink', key: 'Core, China' },
+    { label: '그 외', color: '--viz-life-ink', key: 'Core, non-China' },
   ];
   legend($('legend-rank'), seriesR.map(s => [s.label, s.color]));
   $('rank-text').textContent = `중국 소속 곡선은 성 ${china.n_surnames}개에서 끝나고, 그 외 곡선은 ${fmt(other.n_surnames)}개까지 이어집니다. 전체 곡선은 이 둘의 합입니다. 위쪽 ${pooled.n_tail}개 성에 맞춘 점선의 기울기는 −${num(pooled.zipf_exponent)}입니다. 낮은 빈도 구간은 표본 추출이 모양을 만드는 영역이라 해석하지 않습니다.`;
@@ -293,7 +296,7 @@ function renderDistribution(X) {
     const x = v => m.l + Math.log10(v) * (W - m.l - m.r) / xMax;
     const y = v => H - m.b - Math.log10(v) * (H - m.t - m.b) / yMax;
     [1, 10, 100].forEach(v => {
-      el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: css('--line'), 'stroke-width': 1 }, svg);
+      el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: css('--gk-border-light'), 'stroke-width': 1 }, svg);
       el('text', { x: m.l - 7, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = v;
     });
     [1, 10, 100, 1000, 10000].forEach(v => { el('text', { x: x(v), y: H - 20, 'text-anchor': 'middle' }, svg).textContent = v.toLocaleString('ko-KR'); });
@@ -305,7 +308,7 @@ function renderDistribution(X) {
       el('path', { d: `M${pts}`, fill: 'none', stroke: css(s.color), 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
     });
     const fitLine = [1, pooled.n_tail].map(r => `${x(r)},${y(pooled.kmin * (r / pooled.n_tail) ** (-1 / (pooled.alpha - 1)))}`).join('L');
-    el('path', { d: `M${fitLine}`, fill: 'none', stroke: css('--ink'), 'stroke-width': 1.5, 'stroke-dasharray': '6 4' }, svg);
+    el('path', { d: `M${fitLine}`, fill: 'none', stroke: css('--gk-text-bolder'), 'stroke-width': 1.5, 'stroke-dasharray': '6 4' }, svg);
     seriesR.forEach((s, i) => {
       const c = X.curves[s.key];
       el('text', { x: x(c.rank.at(-1)), y: y(c.freq.at(-1)) - 8 - (i === 0 ? 15 : 0), 'text-anchor': 'end', class: 'strong' }, svg).textContent = s.label;
@@ -342,10 +345,10 @@ function renderDistribution(X) {
 
   // Mixture null.
   $('mix-text').textContent = `Y₂ = Σpₖ²는 무작위로 고른 두 논문의 제1저자 성이 같을 확률이며, 통계물리의 inverse participation ratio입니다. 모든 성이 균등하면 1/S, 한 성뿐이면 1입니다. 두 집단이 섞이면 Y₂(π) = π²Y_c + (1−π)²Y_o + 2π(1−π)Y_x 가 항등식으로 성립합니다. Y_c, Y_o, Y_x를 2000–25 전체 값(${num(M.y_china, 4)}, ${num(M.y_other, 5)}, ${num(M.y_cross, 5)})으로 고정하고 π만 바꾸면, 2000–04에서 2020–25까지의 Y₂ 증가 ${(M.observed_change * 1e3).toFixed(2)}×10⁻³ 중 ${(M.null_change * 1e3).toFixed(2)}×10⁻³(${pct(M.null_fraction, 0)})가 재현됩니다. 이 곡선에는 Y₂에 맞춰 조정한 parameter가 없습니다. 예외도 있습니다. 2000–04의 예측값은 CI 위에 있어, 초기에는 그 집단의 내부 값이 전체 평균과 달랐을 수 있습니다. 2020–25의 Y₂에서는 중국-중국 쌍이 ${pct(terms.cc / termTotal, 0)}, 교차 쌍이 ${pct(terms.cross / termTotal, 0)}, 그 외-그 외 쌍이 ${pct(terms.oo / termTotal, 0)}를 차지합니다.`;
-  legend($('legend-mix'), [['연도별 측정값', '--d-phys'], ['혼합 null', '--ink']]);
+  legend($('legend-mix'), [['연도별 측정값', '--viz-phys-ink'], ['혼합 null', '--gk-text-bolder']]);
   drawMix = () => {
     const svg = $('mix-chart');
-    const W = 1000, H = 380, m = { t: 14, r: 24, b: 40, l: 66 };
+    const W = 1000, H = 380, m = { t: 14, r: 24, b: 40, l: 72 };
     svg.innerHTML = '';
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.style.minWidth = '640px';
@@ -353,16 +356,16 @@ function renderDistribution(X) {
     const x = v => m.l + v * (W - m.l - m.r) / xMax;
     const y = v => H - m.b - v * (H - m.t - m.b) / yMax;
     for (let v = 0; v <= yMax + 1e-9; v += 0.001) {
-      el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: css('--line'), 'stroke-width': 1 }, svg);
+      el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: css('--gk-border-light'), 'stroke-width': 1 }, svg);
       el('text', { x: m.l - 7, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = v.toFixed(3);
     }
     [0, 0.1, 0.2, 0.3].forEach(v => { el('text', { x: x(v), y: H - 20, 'text-anchor': 'middle' }, svg).textContent = `${v * 100}%`; });
     el('text', { x: (W - m.r + m.l) / 2, y: H - 3, 'text-anchor': 'middle' }, svg).textContent = '중국 소속 제1저자 비중 π';
     const curve = [];
     for (let p = 0; p <= xMax + 1e-9; p += 0.005) curve.push(`${x(p)},${y(p * p * M.y_china + (1 - p) ** 2 * M.y_other + 2 * p * (1 - p) * M.y_cross)}`);
-    el('path', { d: `M${curve.join('L')}`, fill: 'none', stroke: css('--ink'), 'stroke-width': 2 }, svg);
+    el('path', { d: `M${curve.join('L')}`, fill: 'none', stroke: css('--gk-text-bolder'), 'stroke-width': 2 }, svg);
     X.annual.forEach(a => {
-      const dot = el('circle', { cx: x(a.pi), cy: y(a.y2), r: 5, fill: css('--d-phys'), stroke: css('--bg'), 'stroke-width': 2 }, svg);
+      const dot = el('circle', { cx: x(a.pi), cy: y(a.y2), r: 5, fill: css('--viz-phys-ink'), stroke: css('--gk-bg'), 'stroke-width': 2 }, svg);
       dot.addEventListener('mousemove', event => showTip(event, `<b>${a.year}</b><br>π ${pct(a.pi, 1)}<br>Y₂ ${a.y2.toFixed(5)}<br>혼합 null ${a.null.toFixed(5)}<br>n=${a.n_known}`));
       dot.addEventListener('mouseleave', hideTip);
     });
@@ -374,17 +377,23 @@ function renderDistribution(X) {
   const claims = [
     ['성 빈도의 tail은 exponential보다 두껍다', `적합한 ${X.tails.filter(t => t.alpha !== null).length}개 표본 모두 R>0, p≤${pval(Math.max(...X.tails.filter(t => t.alpha !== null).map(t => t.alternatives.exponential.p)))}`, '보였다 (관찰)'],
     ['Core 2000–25의 α는 약 ' + num(pooled.alpha), `95% ${num(pooled.alpha_lo)}–${num(pooled.alpha_hi)}, n=${pooled.n_authors.toLocaleString('ko-KR')}. 서술량이며 scale-free의 증거가 아님`, '측정값으로만 보고'],
-    ['성 빈도는 power law다', `GOF 기각 안 됨, 그러나 lognormal 기각력 ${pct(syn('lognormal').reject_gof, 0)}`, '주장 불가. "구분되지 않는다"까지'],
-    ['Y₂ 증가는 π 변화와 부합한다', `null 재현 ${pct(M.null_fraction, 0)}, R²=${num(M.r2)}, 5개 기간 중 ${M.periods_null_inside_ci}개가 CI 안`, '시사한다 (함의). 인과 아님'],
+    ['성 빈도는 power law다', `집단별 재검정에서 cutoff 기각 없음(p=${pval(retest('non-China').p)}, ${pval(retest('China').p)}). lognormal 탐지율 ${pct(retest('non-China').detect_lognormal, 0)}, ${pct(retest('China').detect_lognormal, 0)}로 기준 80% 미달`, '주장 불가. "판정 불가"까지'],
+    ['Y₂ 증가는 π 변화와 부합한다', `표본 외 n=${snapN.toLocaleString('ko-KR')}: 재현 ${pct(oos.fraction, 0)}, R²=${num(oos.r2)}, ${oos.n_snapshots}개 시점 중 ${oos.inside}개가 CI 안`, '시사한다 (함의). 인과 아님'],
+    ['다섯 성은 대부분의 field에서 분야 전체보다 빠르게 늘었다', `${fieldRows.filter(g => g.e_lo > 1).length}/${fieldRows.length}개 field에서 E의 95% CI 하한 > 1`, '보였다 (관찰)'],
+    ['초과 증가의 평균 크기는 중국 소속 비중 변화와 같은 크기다', `구성 null이 ${comp.inside}/${comp.n_fields}개 field의 CI 안, E/E_null 중앙값 ${num(comp.ratio_median)}`, '시사한다 (함의). 인과 아님'],
+    ['Field별 E의 순위 차이는 실재한다', `Q 검정 p=${pval(F.heterogeneity.p)}, I²=${pct(F.heterogeneity.I2, 0)}, 셀당 표본 600건. 차이 없음을 보인 것은 아님`, '주장 불가. "구분되지 않는다"까지'],
+    ['ML에서 다섯 성이 유독 빠르게 늘었다', `논문 수 ×${F.ml.growth_five.toFixed(0)}, 그러나 분야 전체 ×${F.ml.growth_all.toFixed(1)}. E ${num(F.ml.e)} (${num(F.ml.e_lo)}–${num(F.ml.e_hi)})가 field 평균 ${num(F.heterogeneity.mean_e)}와 겹침`, '주장 불가. 절대 증가만 관찰'],
     ['중국 소속 집단의 성 다양성은 그 외보다 두 자릿수 작다', `1/Y₂ 약 ${Math.round(1 / M.y_china)} 대 ${fmt(1 / M.y_other)}. exp(H)는 약 ${Math.round(hillChina)} 대 ${fmt(hillOther)}이지만 그 외의 coverage가 ${pct(last.coverage_other, 0)}라 이 값은 불확실`, '보였다 (1/Y₂ 기준)'],
     ['차이의 기원은 새 성의 출현율이다', 'Baek et al.이 나라별 분포 차이에 대해 제시한 가설. 이 데이터로는 검정하지 않음', '추측. 출처 명시'],
   ];
   $('claim-table').innerHTML = `<thead><tr><th>주장</th><th>현재 근거</th><th>허용되는 최대 강도</th></tr></thead><tbody>${claims.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
-  $('banned').innerHTML = '<strong>쓰면 안 되는 문장:</strong> "저자 성 분포는 scale-free다", "Zhang이 늘어난 원인은 …이다", "응축(condensation) 상전이가 일어났다". 앞의 둘은 이 데이터가 뒷받침하지 않고, 마지막은 시스템 크기에 대한 scaling을 재지 않았으므로 근거가 없습니다.';
+  $('banned').innerHTML = '<strong>쓰면 안 되는 문장:</strong> "저자 성 분포는 scale-free다", "Zhang이 늘어난 원인은 …이다", "응축(condensation) 상전이가 일어났다", "ML은 중국계 저자가 장악했다", "성 비중이 늘면 분야 생산성이 오른다". 첫째와 둘째, 넷째와 다섯째는 이 데이터가 뒷받침하지 않습니다. 성은 국적도 출신도 아니며 저자의 소속과도 다릅니다. 셋째는 시스템 크기를 고정한 finite-size scaling을 재지 않았으므로 근거가 없습니다.';
   const life = [
     ['kmin 제한 없음, n≈4,300–15,000', 'α ≈ 3.2–3.6, 일부 표본은 kmin=1 선택', '재표본마다 α가 약 2.2와 약 3.5로 갈림', '철회. k=1 부근의 표본 추출 artifact'],
     ['복원 bootstrap', '2000–04 Y₂ CI 0.00051–0.00062', '점추정치 0.00035가 CI 밖', '교체. 중복 논문이 같은 성 쌍으로 세어짐. half-sample로 변경'],
+    ['Pooled 표본, n≈15,600', '합쳐진 성 분포가 power law인지 묻는다', '혼합 null은 power law 없이 같은 범위의 α를 만듦', '교체. 집단별 cutoff 검정으로 바꾸고 pooled는 기술 통계로 내림'],
     ['2000–04 값을 기준으로 고정, 중국 n=146', 'π가 Y₂ 증가의 67%를 설명', '2000–04의 중국 표본이 너무 작음', '교체. 전 기간 pooled 값 사용 후 ' + pct(M.null_fraction, 0)],
+    ['기간 표본, n≈15,600', `π가 Y₂ 증가의 ${pct(M.null_fraction, 0)}를 재현`, `새 연도 표본 n=${snapN.toLocaleString('ko-KR')}에서 ${pct(oos.fraction, 0)}, ${oos.n_snapshots}개 시점 중 ${oos.inside}개만 CI 안`, '약화. 방향과 크기는 유지, 정량 값은 표본 외 값으로 보고'],
   ];
   $('life-table').innerHTML = `<thead><tr><th>시점</th><th>잠정 진술</th><th>확인 결과</th><th>처분</th></tr></thead><tbody>${life.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
 }
@@ -425,8 +434,8 @@ function renderFields(D) {
       return `<tr${thin ? ' class="thin"' : ''}><td>${esc(f)}</td><td>${state.recent ? n.toLocaleString('ko-KR') : ''}</td>${columns.map(c => {
         const d = cell.get(`${c}|${f}`), v = get(c, f);
         const lo = state.recent ? d.recent_lo : d.lo, hi = state.recent ? d.recent_hi : d.hi;
-        const alpha = (v / (c === 'All five' ? max : single)) * 42;
-        return `<td title="95% CI ${pct(Math.max(0, lo))}–${pct(hi)}" style="background:color-mix(in srgb, var(--accent) ${alpha.toFixed(0)}%, transparent)">${pct(v)}</td>`;
+        const alpha = (v / (c === 'All five' ? max : single)) * 100;
+        return `<td title="95% CI ${pct(Math.max(0, lo))}–${pct(hi)}" style="background:color-mix(in srgb, var(--viz-zhang) ${alpha.toFixed(0)}%, transparent)">${pct(v)}</td>`;
       }).join('')}</tr>`;
     }).join('');
     $('field-table').innerHTML = `<thead>${head}</thead><tbody>${body}</tbody>`;
@@ -467,7 +476,7 @@ function renderProse(D) {
   const sorted = all.by_field.filter(d => d.surname === 'All five').sort((p, q) => q.recent_share - p.recent_share);
   const zf = all.by_field.filter(d => d.surname === 'Zhang').sort((p, q) => q.recent_share - p.recent_share)[0];
   $('field-text').textContent = `Field 비교는 층마다 2020–25년 표본 600건이 보장되는 전체 OpenAlex를 기본으로 합니다. 다섯 성 합계는 ${fr(sorted[0].field)}, ${fr(sorted[1].field)}, ${fr(sorted[2].field)} 순으로 높고, ${fr(sorted.at(-1).field)}, ${fr(sorted.at(-2).field)}로 가장 낮습니다. Zhang만 보면 ${zf.field}가 ${pct(zf.recent_share, 1)}로 가장 높습니다. 표본이 600건이라 인접한 순위는 CI가 겹칩니다. 셀에 마우스를 올리면 95% CI가 나오고, core로 바꾸면 표본 300건 미만 행은 흐리게 표시됩니다.`;
-  $('method').innerHTML = `<ul>
+  $('method-body').innerHTML = `<ul>
     <li><strong>정의.</strong> 제1저자 성으로 셉니다. 엄밀한 "et al."(저자 3인 이상)로 좁히면 전체 OpenAlex에서 Zhang은 ${pct(a('Zhang').et_al_share)}, core에서는 ${pct(c('Zhang').et_al_share)}입니다.</li>
     <li><strong>왜 표본인가.</strong> OpenAlex<sup><a href="#r1">1</a></sup>에는 제1저자 성 필터가 없습니다. 전체 article은 field×5년 260개 층에서 층당 최대 600건, core는 연도별 200–1,000건을 무작위 추출해 합계 ${(D.meta.all.n_sample + D.meta.core.n_sample).toLocaleString('ko-KR')}건을 얻었고, 층화 Hájek ratio estimator와 linearized variance로 95% CI를 계산했습니다. Field가 없는 논문은 분모에서 제외했습니다(core 표본의 ${pct(D.meta.core.unfielded, 1)}).</li>
     <li><strong>검증.</strong> Core 2020–25 중국 소속 제1저자 중 중국 5대 성(Wang·Li·Zhang·Liu·Chen)은 ${pct(validity.top5_share, 1)}(CI ${pct(validity.top5_lo, 1)}–${pct(validity.top5_hi, 1)})로, 2020년 호적 인구 통계의 30.8%와 일치합니다<sup><a href="#r7">7</a></sup>. 참고로 트윗 목록에 없는 Li가 core 2020–25에서 ${pct(liCore.share)}로 Wang 다음입니다.</li>
@@ -476,7 +485,8 @@ function renderProse(D) {
     <li><strong>이름 parsing.</strong> "Zhang Wei"처럼 성이 앞에 오는 표기는 병음이고 소속이 중화권이거나 없을 때만 성으로 읽었습니다. 소속 미상 논문이 많은 초기 연도는 오차가 더 클 수 있습니다. 한자 표기는 첫 글자로 판단했습니다.</li>
     <li><strong>분류와 수록 범위.</strong> Field는 OpenAlex topic을 Scopus ASJC에 대응시킨 것으로, 제목·초록·저널명으로 분류한 결과입니다<sup><a href="#r2">2</a></sup>. OpenAlex의 수록 범위 자체도 데이터베이스마다 다르며<sup><a href="#r3">3</a></sup>, core는 주요 저널에 치우친 모집단입니다.</li>
     <li><strong>분포 분석의 표본.</strong> Power-law 적합에는 정수 빈도가 필요해서 rejection으로 등확률 부분표본을 만들었습니다. 그래서 n이 줄어듭니다(core 2000–25 약 15,600건). 라틴 문자 성만 쓰고 한자·가나·기타 문자 표기와 비인명 토큰은 제외했으며, 제외 행은 사유와 함께 저장했습니다. 병음은 章과 張처럼 다른 한자를 하나로 합치므로 중국 성의 다양성을 낮춰 잽니다.</li>
-    <li><strong>재현.</strong> <code>scripts/surname_share_collect.py</code>, <code>scripts/surname_share_analyze.py</code>, <code>scripts/surname_share_distribution.py</code>. 2026-10-31 기준 데이터입니다.</li></ul>`;
+    <li><strong>Field 비교의 표본.</strong> Field·subfield×5년 셀마다 core에서 600건을 무작위 추출했습니다. E의 CI는 비중 비의 delta method(Haldane 보정)이고 FDR은 26개 field에 Benjamini–Hochberg를 적용했습니다. 전체 논문 수와 중국 소속 포함 논문 수는 표본이 아닌 exact count입니다. 2000–04는 제1저자 소속 미상이 많고, 성별 비교는 라틴 문자 표기에 한정되므로 초기 값의 오차가 더 큽니다.</li>
+    <li><strong>재현.</strong> <code>scripts/surname_share_collect.py</code>, <code>scripts/surname_share_analyze.py</code>, <code>scripts/surname_share_distribution.py</code>, <code>scripts/surname_share_retest.py</code>, <code>scripts/surname_share_fields.py</code>. 2026-10-31 기준 데이터입니다.</li></ul>`;
   $('refs').innerHTML = REFS.map((r, i) => `<li id="r${i + 1}">${r}</li>`).join('');
 }
 

@@ -9,9 +9,9 @@ Two corpora are analysed the same way:
 S3: parse the first author's surname (kept rows, audit rows, dropped rows saved).
 S4: stratified Hajek estimates overall, by year, and by field x period.
 S5: time-series analysis (segmented logit trend, shift-share decompositions).
-S6: write docs/data.json for the page.
+S6: write docs/surname-share/data.json for the page.
 
-Every step is logged to data/STEP_LOG.csv.
+Every step is logged to Data/surname_share/STEP_LOG.csv.
 """
 import csv
 import hashlib

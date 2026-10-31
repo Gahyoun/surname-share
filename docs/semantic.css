@@ -1,0 +1,392 @@
+@charset "utf-8";
+/* GNU x KRDS semantic tokens. Load after tokens/primitives.css.
+   Layer 2 of KRDS's three token layers: roles point at primitives, never at raw values.
+   Screens use only the mode-free aliases at the bottom (--gk-*); they switch between the
+   light and high-contrast roles with <html data-krds-mode="high-contrast">.
+   Role-to-step mapping follows KRDS v1.1.0 krds_tokens.css. */
+
+:root {
+  /* ---- typography (KRDS style_03) ------------------------------------------------------ */
+  --krds-typo-font-type: 'Pretendard GOV', 'Pretendard', 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --gnu-typo-font-print-kr: 'Noto Sans KR', sans-serif;  /* GNU VI BS16, print */
+  --gnu-typo-font-print-en: 'SUIT', var(--gnu-typo-font-print-kr);  /* GNU VI BS17, print */
+  --krds-typo-font-weight-regular: 400;
+  --krds-typo-font-weight-medium: 500;
+  --krds-typo-font-weight-bold: 700;
+  --krds-line-height-base: 1.5;
+  /* sizes in rem with html { font-size: 62.5% } -> 1rem = 10px */
+  --krds-pc-typo-display-large: 6rem;    --krds-mobile-typo-display-large: 4.4rem;
+  --krds-pc-typo-display-medium: 4.4rem; --krds-mobile-typo-display-medium: 3.2rem;
+  --krds-pc-typo-display-small: 3.6rem;  --krds-mobile-typo-display-small: 2.8rem;
+  --krds-pc-typo-heading-xlarge: 4rem;   --krds-mobile-typo-heading-xlarge: 2.8rem;
+  --krds-pc-typo-heading-large: 3.2rem;  --krds-mobile-typo-heading-large: 2.4rem;
+  --krds-pc-typo-heading-medium: 2.4rem; --krds-mobile-typo-heading-medium: 2.2rem;
+  --krds-typo-heading-small: 1.9rem;
+  --krds-typo-heading-xsmall: 1.7rem;
+  --krds-typo-heading-xxsmall: 1.5rem;
+  --krds-typo-body-large: 1.9rem;
+  --krds-typo-body-medium: 1.7rem;
+  --krds-typo-body-small: 1.5rem;
+  --krds-typo-body-xsmall: 1.3rem;
+  --krds-pc-typo-navigation-title-large: 2.4rem; --krds-mobile-typo-navigation-title-large: 2.2rem;
+  --krds-pc-typo-navigation-title-small: 1.9rem; --krds-mobile-typo-navigation-title-small: 1.7rem;
+  --krds-typo-navigation-depth-medium: 1.7rem;
+  --krds-typo-navigation-depth-small: 1.5rem;
+  --krds-typo-label-large: 1.9rem;
+  --krds-typo-label-medium: 1.7rem;
+  --krds-typo-label-small: 1.5rem;
+  --krds-typo-label-xsmall: 1.3rem;
+
+  /* ---- number scale and spacing: copied from KRDS v1.1.0 krds_tokens.css (style_05) ---- */
+  --krds-number-0: 0rem;
+  --krds-number-1: 0.1rem;
+  --krds-number-2: 0.2rem;
+  --krds-number-3: 0.4rem;
+  --krds-number-4: 0.6rem;
+  --krds-number-5: 0.8rem;
+  --krds-number-6: 1rem;
+  --krds-number-7: 1.2rem;
+  --krds-number-8: 1.6rem;
+  --krds-number-9: 2rem;
+  --krds-number-10: 2.4rem;
+  --krds-number-11: 2.8rem;
+  --krds-number-12: 3.2rem;
+  --krds-number-13: 3.6rem;
+  --krds-number-14: 4rem;
+  --krds-number-15: 4.4rem;
+  --krds-number-16: 4.8rem;
+  --krds-number-17: 5.6rem;
+  --krds-number-18: 6.4rem;
+  --krds-number-19: 7.2rem;
+  --krds-number-20: 8rem;
+  --krds-number-21: 9.6rem;
+  --krds-number-max: 100rem;
+  --krds-pc-gap-layout-header-breadcrumb: var(--krds-number-10);
+  --krds-pc-gap-layout-left-contents: var(--krds-number-18);
+  --krds-pc-gap-layout-contents-right: var(--krds-number-14);
+  --krds-pc-gap-layout-h1-h2: var(--krds-number-16);
+  --krds-pc-gap-layout-h2-h2: var(--krds-number-20);
+  --krds-pc-gap-layout-h2-h3: var(--krds-number-14);
+  --krds-pc-gap-layout-h3-h3: var(--krds-number-18);
+  --krds-pc-gap-layout-h3-h4: var(--krds-number-10);
+  --krds-pc-gap-layout-h4-h4: var(--krds-number-14);
+  --krds-pc-gap-layout-h4-h5: var(--krds-number-8);
+  --krds-pc-gap-layout-h5-h5: var(--krds-number-12);
+  --krds-pc-gap-layout-title-body-small: var(--krds-number-8);
+  --krds-pc-gap-layout-title-body-medium: var(--krds-number-9);
+  --krds-pc-gap-layout-title-body-large: var(--krds-number-10);
+  --krds-pc-gap-layout-breadcrumb-h1: var(--krds-number-14);
+  --krds-pc-gap-layout-contents-footer: var(--krds-number-18);
+  --krds-pc-gap-layout-text-text-large: var(--krds-number-9);
+  --krds-pc-gap-layout-text-text-medium: var(--krds-number-8);
+  --krds-pc-gap-layout-text-text-small: var(--krds-number-7);
+  --krds-pc-gap-layout-image-text-small: var(--krds-number-9);
+  --krds-pc-gap-layout-image-text-medium: var(--krds-number-10);
+  --krds-pc-gap-layout-image-text-large: var(--krds-number-12);
+  --krds-pc-padding-card-large: var(--krds-number-14);
+  --krds-pc-padding-card-medium: var(--krds-number-12);
+  --krds-pc-padding-card-small: var(--krds-number-10);
+  --krds-pc-padding-card-xsmall: var(--krds-number-8);
+  --krds-mobile-gap-layout-header-breadcrumb: var(--krds-number-8);
+  --krds-mobile-gap-layout-left-contents: 0rem;
+  --krds-mobile-gap-layout-contents-right: 0rem;
+  --krds-mobile-gap-layout-h1-h2: var(--krds-number-12);
+  --krds-mobile-gap-layout-h2-h2: var(--krds-number-14);
+  --krds-mobile-gap-layout-h2-h3: var(--krds-number-10);
+  --krds-mobile-gap-layout-h3-h3: var(--krds-number-12);
+  --krds-mobile-gap-layout-h3-h4: var(--krds-number-8);
+  --krds-mobile-gap-layout-h4-h4: var(--krds-number-10);
+  --krds-mobile-gap-layout-h4-h5: var(--krds-number-7);
+  --krds-mobile-gap-layout-h5-h5: var(--krds-number-8);
+  --krds-mobile-gap-layout-title-body-small: var(--krds-number-5);
+  --krds-mobile-gap-layout-title-body-medium: var(--krds-number-7);
+  --krds-mobile-gap-layout-title-body-large: var(--krds-number-9);
+  --krds-mobile-gap-layout-breadcrumb-h1: var(--krds-number-12);
+  --krds-mobile-gap-layout-contents-footer: var(--krds-number-14);
+  --krds-mobile-gap-layout-text-text-large: var(--krds-number-8);
+  --krds-mobile-gap-layout-text-text-medium: var(--krds-number-7);
+  --krds-mobile-gap-layout-text-text-small: var(--krds-number-6);
+  --krds-mobile-gap-layout-image-text-small: var(--krds-number-8);
+  --krds-mobile-gap-layout-image-text-medium: var(--krds-number-9);
+  --krds-mobile-gap-layout-image-text-large: var(--krds-number-10);
+  --krds-mobile-padding-card-large: var(--krds-number-10);
+  --krds-mobile-padding-card-medium: var(--krds-number-10);
+  --krds-mobile-padding-card-small: var(--krds-number-9);
+  --krds-mobile-padding-card-xsmall: var(--krds-number-7);
+  --krds-gap-card-list: var(--krds-number-10);   /* gap-7 24px: card lists */
+  --krds-gap-input-row: var(--krds-number-8);    /* gap-5 16px: inputs side by side */
+  --krds-gap-input-parts: var(--krds-number-5);  /* gap-3 8px: label / help / box / message */
+  --krds-padding-input: var(--krds-number-8);    /* padding-6 16px */
+
+  /* grid (standard style: 4 breakpoints, fixed 1200px content) */
+  --krds-contents-size-max: 120rem;
+  --krds-screen-margin-large: 2.4rem;
+  --krds-screen-margin-small: 1.6rem;
+  --krds-gutter-large: 2.4rem;
+  --krds-gutter-small: 1.6rem;
+
+  /* component heights */
+  --krds-size-height-xsmall: 3.2rem; --krds-size-height-small: 4rem; --krds-size-height-medium: 4.8rem;
+  --krds-size-height-large: 5.6rem;  --krds-size-height-xlarge: 6.4rem;
+
+  /* ---- radius: container height x 1/8, rounded up to even, max 12px (KRDS style_04) ------ */
+  --krds-radius-xsmall: 0.2rem;   /* <= 16px: indicator, badge, progress */
+  --krds-radius-small: 0.4rem;    /* 20-32px: chip, checkbox, radio, switch, tag */
+  --krds-radius-medium: 0.6rem;   /* 40-64px: button, input, select, pagination */
+  --krds-radius-large: 1rem;      /* 72-80px: card, dialog */
+  --krds-radius-xlarge: 1.2rem;   /* >= 96px: banner, bottom sheet (max) */
+  --krds-radius-max: 100rem;      /* full circle only */
+
+  /* ---- icon (KRDS style_06) ---------------------------------------------------------------- */
+  --krds-icon-size-xsmall: 1.6rem; --krds-icon-size-small: 2rem; --krds-icon-size-medium: 2.4rem;
+  --krds-icon-size-large: 3.2rem;  --krds-icon-size-xlarge: 4rem;
+  --krds-icon-stroke: 1.6px;       /* at 24px; scale with size, round caps */
+
+  /* ---- light mode roles -------------------------------------------------------------------- */
+  --krds-light-color-text-basic: var(--krds-color-light-gray-90);
+  --krds-light-color-text-bolder: var(--krds-color-light-gray-95);
+  --krds-light-color-text-subtle: var(--krds-color-light-gray-70);
+  --krds-light-color-text-disabled: var(--krds-color-light-gray-40);
+  --krds-light-color-text-primary: var(--krds-color-light-primary-60);
+  --krds-light-color-text-secondary: var(--krds-color-light-secondary-80);
+  --krds-light-color-text-point: var(--krds-color-light-point-60);
+  --krds-light-color-text-danger: var(--krds-color-light-danger-60);
+  --krds-light-color-text-inverse: var(--krds-color-light-gray-0);
+  --krds-light-color-background-white: var(--krds-color-light-gray-0);
+  --krds-light-color-background-gray: var(--krds-color-light-gray-10);   /* elevation -1 */
+  --krds-light-color-background-dim: var(--krds-color-light-alpha-black75);
+  --krds-light-color-surface-white: var(--krds-color-light-gray-0);
+  --krds-light-color-surface-white-subtle: var(--krds-color-light-gray-0);
+  --krds-light-color-surface-white-subtler: var(--krds-color-light-gray-0);
+  --krds-light-color-surface-gray-subtler: var(--krds-color-light-gray-5); /* elevation +1 */
+  --krds-light-color-surface-primary-subtler: var(--krds-color-light-primary-5);
+  --krds-light-color-surface-secondary-subtler: var(--krds-color-light-secondary-5);
+  --krds-light-color-surface-disabled: var(--krds-color-light-gray-20);
+  --krds-light-color-border-gray-light: var(--krds-color-light-gray-20);
+  --krds-light-color-border-gray: var(--krds-color-light-gray-30);
+  --krds-light-color-border-gray-dark: var(--krds-color-light-gray-60);  /* input */
+  --krds-light-color-border-primary: var(--krds-color-light-primary-50);
+  --krds-light-color-border-secondary: var(--krds-color-light-secondary-70);
+  --krds-light-color-divider-gray-light: var(--krds-color-light-gray-20);
+  --krds-light-color-icon-gray: var(--krds-color-light-gray-80);
+  --krds-light-color-icon-primary: var(--krds-color-light-primary-50);
+  --krds-light-color-icon-disabled: var(--krds-color-light-gray-40);
+  --krds-light-color-link-default: var(--krds-color-light-primary-50);
+  --krds-light-color-link-hover: var(--krds-color-light-primary-60);
+  --krds-light-color-link-pressed: var(--krds-color-light-primary-70);
+  --krds-light-color-link-visited: #5917b8;
+  --krds-light-color-button-primary-fill: var(--krds-color-light-primary-50);
+  --krds-light-color-button-primary-fill-hover: var(--krds-color-light-primary-60);
+  --krds-light-color-button-primary-fill-pressed: var(--krds-color-light-primary-70);
+  --krds-light-color-button-secondary-fill: var(--krds-color-light-primary-5);
+  --krds-light-color-button-secondary-fill-hover: var(--krds-color-light-primary-10);
+  --krds-light-color-button-secondary-fill-pressed: var(--krds-color-light-primary-20);
+  --krds-light-color-button-secondary-border: var(--krds-color-light-primary-50);
+  --krds-light-color-button-tertiary-border: var(--krds-color-light-gray-60);
+  --krds-light-color-action-secondary-selected: var(--krds-color-light-secondary-70); /* tab, menu, page */
+  --krds-light-color-element-point: var(--krds-color-light-point-50);
+  --krds-light-color-selection-fill: var(--krds-color-light-secondary-50);
+  --krds-light-color-graphic-brand: var(--gnu-brand-blue);
+  --krds-light-color-alpha-shadow1: #0000000d;
+  --krds-light-color-alpha-shadow2: #00000014;
+  --krds-light-color-alpha-shadow3: #0000001f;
+  --krds-light-color-alpha-shadow4: #00000029;
+
+  /* ---- high-contrast mode roles (KRDS style_09: lighter as layers rise) -------------------- */
+  --krds-high-contrast-color-text-basic: var(--krds-color-high-contrast-gray-5);
+  --krds-high-contrast-color-text-bolder: var(--krds-color-high-contrast-gray-0);
+  --krds-high-contrast-color-text-subtle: var(--krds-color-high-contrast-gray-20);
+  --krds-high-contrast-color-text-disabled: var(--krds-color-high-contrast-gray-60);
+  --krds-high-contrast-color-text-primary: var(--krds-color-high-contrast-primary-20);
+  --krds-high-contrast-color-text-secondary: var(--krds-color-high-contrast-secondary-20);
+  --krds-high-contrast-color-text-point: var(--krds-color-high-contrast-point-20);
+  --krds-high-contrast-color-text-danger: var(--krds-color-high-contrast-danger-20);
+  --krds-high-contrast-color-text-inverse: var(--krds-color-high-contrast-gray-90);
+  --krds-high-contrast-color-background-white: var(--krds-color-high-contrast-gray-100);
+  --krds-high-contrast-color-background-gray: var(--krds-color-high-contrast-gray-90);
+  --krds-high-contrast-color-background-dim: var(--krds-color-high-contrast-alpha-black75);
+  --krds-high-contrast-color-surface-white: var(--krds-color-high-contrast-gray-100);
+  --krds-high-contrast-color-surface-white-subtle: var(--krds-color-high-contrast-gray-95);
+  --krds-high-contrast-color-surface-white-subtler: var(--krds-color-high-contrast-gray-90);
+  --krds-high-contrast-color-surface-gray-subtler: var(--krds-color-high-contrast-gray-95);
+  --krds-high-contrast-color-surface-primary-subtler: var(--krds-color-high-contrast-primary-95);
+  --krds-high-contrast-color-surface-secondary-subtler: var(--krds-color-high-contrast-secondary-95);
+  --krds-high-contrast-color-surface-disabled: var(--krds-color-high-contrast-gray-70);
+  --krds-high-contrast-color-border-gray-light: var(--krds-color-high-contrast-gray-80);
+  --krds-high-contrast-color-border-gray: var(--krds-color-high-contrast-gray-70);
+  --krds-high-contrast-color-border-gray-dark: var(--krds-color-high-contrast-gray-40);
+  --krds-high-contrast-color-border-primary: var(--krds-color-high-contrast-primary-50);
+  --krds-high-contrast-color-border-secondary: var(--krds-color-high-contrast-secondary-60);
+  --krds-high-contrast-color-divider-gray-light: var(--krds-color-high-contrast-gray-80);
+  --krds-high-contrast-color-icon-gray: var(--krds-color-high-contrast-gray-5);
+  --krds-high-contrast-color-icon-primary: var(--krds-color-high-contrast-primary-20);
+  --krds-high-contrast-color-icon-disabled: var(--krds-color-high-contrast-gray-60);
+  --krds-high-contrast-color-link-default: var(--krds-color-high-contrast-primary-30);
+  --krds-high-contrast-color-link-hover: var(--krds-color-high-contrast-primary-20);
+  --krds-high-contrast-color-link-pressed: var(--krds-color-high-contrast-primary-10);
+  --krds-high-contrast-color-link-visited: #c9a6f7;
+  --krds-high-contrast-color-button-primary-fill: var(--krds-color-high-contrast-primary-50);
+  --krds-high-contrast-color-button-primary-fill-hover: var(--krds-color-high-contrast-primary-60);
+  --krds-high-contrast-color-button-primary-fill-pressed: var(--krds-color-high-contrast-primary-70);
+  --krds-high-contrast-color-button-secondary-fill: var(--krds-color-high-contrast-primary-95);
+  --krds-high-contrast-color-button-secondary-fill-hover: var(--krds-color-high-contrast-primary-90);
+  --krds-high-contrast-color-button-secondary-fill-pressed: var(--krds-color-high-contrast-primary-80);
+  --krds-high-contrast-color-button-secondary-border: var(--krds-color-high-contrast-primary-30);
+  --krds-high-contrast-color-button-tertiary-border: var(--krds-color-high-contrast-gray-40);
+  --krds-high-contrast-color-action-secondary-selected: var(--krds-color-high-contrast-secondary-30);
+  --krds-high-contrast-color-element-point: var(--krds-color-high-contrast-point-30);
+  --krds-high-contrast-color-selection-fill: var(--krds-color-high-contrast-secondary-50);
+  --krds-high-contrast-color-graphic-brand: var(--gnu-brand-blue);
+  --krds-high-contrast-color-alpha-shadow1: #0000001f;
+  --krds-high-contrast-color-alpha-shadow2: #00000033;
+  --krds-high-contrast-color-alpha-shadow3: #00000066;
+  --krds-high-contrast-color-alpha-shadow4: #00000080;
+}
+
+/* ---- mode-free aliases: the only color names screens should use ----------------------------- */
+:root, [data-krds-mode="light"] {
+  --gk-mode: light;
+  --gk-text: var(--krds-light-color-text-basic);
+  --gk-text-bolder: var(--krds-light-color-text-bolder);
+  --gk-text-subtle: var(--krds-light-color-text-subtle);
+  --gk-text-disabled: var(--krds-light-color-text-disabled);
+  --gk-text-primary: var(--krds-light-color-text-primary);
+  --gk-text-secondary: var(--krds-light-color-text-secondary);
+  --gk-text-point: var(--krds-light-color-text-point);
+  --gk-text-danger: var(--krds-light-color-text-danger);
+  --gk-text-inverse: var(--krds-light-color-text-inverse);
+  --gk-bg: var(--krds-light-color-background-white);
+  --gk-bg-sunken: var(--krds-light-color-background-gray);
+  --gk-dim: var(--krds-light-color-background-dim);
+  --gk-surface: var(--krds-light-color-surface-white);
+  --gk-surface-raised: var(--krds-light-color-surface-gray-subtler);
+  --gk-surface-top: var(--krds-light-color-surface-white-subtler);
+  --gk-surface-primary: var(--krds-light-color-surface-primary-subtler);
+  --gk-surface-secondary: var(--krds-light-color-surface-secondary-subtler);
+  --gk-surface-disabled: var(--krds-light-color-surface-disabled);
+  --gk-border-light: var(--krds-light-color-border-gray-light);
+  --gk-border: var(--krds-light-color-border-gray);
+  --gk-border-input: var(--krds-light-color-border-gray-dark);
+  --gk-border-primary: var(--krds-light-color-border-primary);
+  --gk-border-secondary: var(--krds-light-color-border-secondary);
+  --gk-divider: var(--krds-light-color-divider-gray-light);
+  --gk-icon: var(--krds-light-color-icon-gray);
+  --gk-icon-primary: var(--krds-light-color-icon-primary);
+  --gk-icon-disabled: var(--krds-light-color-icon-disabled);
+  --gk-link: var(--krds-light-color-link-default);
+  --gk-link-hover: var(--krds-light-color-link-hover);
+  --gk-link-pressed: var(--krds-light-color-link-pressed);
+  --gk-link-visited: var(--krds-light-color-link-visited);
+  --gk-btn-primary: var(--krds-light-color-button-primary-fill);
+  --gk-btn-primary-hover: var(--krds-light-color-button-primary-fill-hover);
+  --gk-btn-primary-pressed: var(--krds-light-color-button-primary-fill-pressed);
+  --gk-btn-secondary: var(--krds-light-color-button-secondary-fill);
+  --gk-btn-secondary-hover: var(--krds-light-color-button-secondary-fill-hover);
+  --gk-btn-secondary-pressed: var(--krds-light-color-button-secondary-fill-pressed);
+  --gk-btn-secondary-border: var(--krds-light-color-button-secondary-border);
+  --gk-btn-tertiary-border: var(--krds-light-color-button-tertiary-border);
+  --gk-selected: var(--krds-light-color-action-secondary-selected);
+  --gk-point: var(--krds-light-color-element-point);
+  --gk-selection: var(--krds-light-color-selection-fill);
+  --gk-brand: var(--krds-light-color-graphic-brand);
+  --gk-shadow-1: 0 0 0.2rem 0 var(--krds-light-color-alpha-shadow1), 0 0.2rem 0.4rem 0 var(--krds-light-color-alpha-shadow1);
+  --gk-shadow-2: 0 0 0.2rem 0 var(--krds-light-color-alpha-shadow1), 0 0.4rem 0.8rem 0 var(--krds-light-color-alpha-shadow2);
+  --gk-shadow-3: 0 0 0.2rem 0 var(--krds-light-color-alpha-shadow2), 0 0.8rem 1.6rem 0 var(--krds-light-color-alpha-shadow3);
+  --gk-shadow-4: 0 0 0.2rem 0 var(--krds-light-color-alpha-shadow2), 0 1.6rem 2.4rem 0 var(--krds-light-color-alpha-shadow3);
+  --gk-focus: 0 0 0 0.2rem var(--krds-color-light-gray-0), 0 0 0 0.6rem var(--krds-light-color-border-primary);
+  --gk-border-width-input: 0.1rem;
+  color-scheme: light;
+}
+
+[data-krds-mode="high-contrast"] {
+  --gk-mode: high-contrast;
+  --gk-text: var(--krds-high-contrast-color-text-basic);
+  --gk-text-bolder: var(--krds-high-contrast-color-text-bolder);
+  --gk-text-subtle: var(--krds-high-contrast-color-text-subtle);
+  --gk-text-disabled: var(--krds-high-contrast-color-text-disabled);
+  --gk-text-primary: var(--krds-high-contrast-color-text-primary);
+  --gk-text-secondary: var(--krds-high-contrast-color-text-secondary);
+  --gk-text-point: var(--krds-high-contrast-color-text-point);
+  --gk-text-danger: var(--krds-high-contrast-color-text-danger);
+  --gk-text-inverse: var(--krds-high-contrast-color-text-inverse);
+  --gk-bg: var(--krds-high-contrast-color-background-white);
+  --gk-bg-sunken: var(--krds-high-contrast-color-background-gray);
+  --gk-dim: var(--krds-high-contrast-color-background-dim);
+  --gk-surface: var(--krds-high-contrast-color-surface-white);
+  --gk-surface-raised: var(--krds-high-contrast-color-surface-white-subtle);
+  --gk-surface-top: var(--krds-high-contrast-color-surface-white-subtler);
+  --gk-surface-primary: var(--krds-high-contrast-color-surface-primary-subtler);
+  --gk-surface-secondary: var(--krds-high-contrast-color-surface-secondary-subtler);
+  --gk-surface-disabled: var(--krds-high-contrast-color-surface-disabled);
+  --gk-border-light: var(--krds-high-contrast-color-border-gray-light);
+  --gk-border: var(--krds-high-contrast-color-border-gray);
+  --gk-border-input: var(--krds-high-contrast-color-border-gray-dark);
+  --gk-border-primary: var(--krds-high-contrast-color-border-primary);
+  --gk-border-secondary: var(--krds-high-contrast-color-border-secondary);
+  --gk-divider: var(--krds-high-contrast-color-divider-gray-light);
+  --gk-icon: var(--krds-high-contrast-color-icon-gray);
+  --gk-icon-primary: var(--krds-high-contrast-color-icon-primary);
+  --gk-icon-disabled: var(--krds-high-contrast-color-icon-disabled);
+  --gk-link: var(--krds-high-contrast-color-link-default);
+  --gk-link-hover: var(--krds-high-contrast-color-link-hover);
+  --gk-link-pressed: var(--krds-high-contrast-color-link-pressed);
+  --gk-link-visited: var(--krds-high-contrast-color-link-visited);
+  --gk-btn-primary: var(--krds-high-contrast-color-button-primary-fill);
+  --gk-btn-primary-hover: var(--krds-high-contrast-color-button-primary-fill-hover);
+  --gk-btn-primary-pressed: var(--krds-high-contrast-color-button-primary-fill-pressed);
+  --gk-btn-secondary: var(--krds-high-contrast-color-button-secondary-fill);
+  --gk-btn-secondary-hover: var(--krds-high-contrast-color-button-secondary-fill-hover);
+  --gk-btn-secondary-pressed: var(--krds-high-contrast-color-button-secondary-fill-pressed);
+  --gk-btn-secondary-border: var(--krds-high-contrast-color-button-secondary-border);
+  --gk-btn-tertiary-border: var(--krds-high-contrast-color-button-tertiary-border);
+  --gk-selected: var(--krds-high-contrast-color-action-secondary-selected);
+  --gk-point: var(--krds-high-contrast-color-element-point);
+  --gk-selection: var(--krds-high-contrast-color-selection-fill);
+  --gk-brand: var(--krds-high-contrast-color-graphic-brand);
+  /* shadows barely show on black: borders carry the elevation instead */
+  --gk-shadow-1: 0 0 0 0.1rem var(--krds-high-contrast-color-border-gray-light);
+  --gk-shadow-2: 0 0 0 0.1rem var(--krds-high-contrast-color-border-gray);
+  --gk-shadow-3: 0 0 0 0.1rem var(--krds-high-contrast-color-border-gray-dark);
+  --gk-shadow-4: 0 0 0 0.2rem var(--krds-high-contrast-color-border-gray-dark);
+  --gk-focus: 0 0 0 0.2rem var(--krds-color-high-contrast-gray-100), 0 0 0 0.6rem var(--krds-color-high-contrast-primary-30);
+  --gk-border-width-input: 0.2rem;
+  color-scheme: dark;
+}
+
+/* follow the OS when the page opts in with data-krds-mode="theme" */
+@media (prefers-color-scheme: dark) {
+  [data-krds-mode="theme"] {
+    --gk-mode: high-contrast;
+    --gk-text: var(--krds-high-contrast-color-text-basic);
+    --gk-text-subtle: var(--krds-high-contrast-color-text-subtle);
+    --gk-text-primary: var(--krds-high-contrast-color-text-primary);
+    --gk-text-secondary: var(--krds-high-contrast-color-text-secondary);
+    --gk-text-point: var(--krds-high-contrast-color-text-point);
+    --gk-bg: var(--krds-high-contrast-color-background-white);
+    --gk-surface: var(--krds-high-contrast-color-surface-white);
+    --gk-surface-raised: var(--krds-high-contrast-color-surface-white-subtle);
+    --gk-surface-top: var(--krds-high-contrast-color-surface-white-subtler);
+    --gk-surface-primary: var(--krds-high-contrast-color-surface-primary-subtler);
+    --gk-surface-secondary: var(--krds-high-contrast-color-surface-secondary-subtler);
+    --gk-border-light: var(--krds-high-contrast-color-border-gray-light);
+    --gk-border: var(--krds-high-contrast-color-border-gray);
+    --gk-border-input: var(--krds-high-contrast-color-border-gray-dark);
+    --gk-divider: var(--krds-high-contrast-color-divider-gray-light);
+    --gk-icon: var(--krds-high-contrast-color-icon-gray);
+    --gk-link: var(--krds-high-contrast-color-link-default);
+    --gk-link-hover: var(--krds-high-contrast-color-link-hover);
+    --gk-btn-secondary: var(--krds-high-contrast-color-button-secondary-fill);
+    --gk-btn-secondary-hover: var(--krds-high-contrast-color-button-secondary-fill-hover);
+    --gk-btn-secondary-border: var(--krds-high-contrast-color-button-secondary-border);
+    --gk-btn-tertiary-border: var(--krds-high-contrast-color-button-tertiary-border);
+    --gk-selected: var(--krds-high-contrast-color-action-secondary-selected);
+    --gk-point: var(--krds-high-contrast-color-element-point);
+    --gk-shadow-1: 0 0 0 0.1rem var(--krds-high-contrast-color-border-gray-light);
+    --gk-shadow-2: 0 0 0 0.1rem var(--krds-high-contrast-color-border-gray);
+    --gk-shadow-3: 0 0 0 0.1rem var(--krds-high-contrast-color-border-gray-dark);
+    --gk-shadow-4: 0 0 0 0.2rem var(--krds-high-contrast-color-border-gray-dark);
+    --gk-focus: 0 0 0 0.2rem var(--krds-color-high-contrast-gray-100), 0 0 0 0.6rem var(--krds-color-high-contrast-primary-30);
+    --gk-border-width-input: 0.2rem;
+    color-scheme: dark;
+  }
+}

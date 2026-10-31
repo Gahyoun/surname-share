@@ -1,84 +1,30 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-krds-mode="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Zhang et al. 비중</title>
 <meta name="description" content="OpenAlex 1975–2025 층화표본으로 추정한 Zhang·Chen·Wang·Guo·Liu 제1저자 논문의 비중과 분야별 시계열">
-<style>
-:root {
-  color-scheme: light;
-  --bg: #fcfcfb; --panel: #f4f3ef; --line: #dddcd5; --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #6f6e69;
-  --s-zhang: #2a78d6; --s-chen: #eb6834; --s-wang: #1baf7a; --s-guo: #eda100; --s-liu: #e87ba4;
-  --d-life: #008300; --d-phys: #6250d6; --d-health: #eda100; --d-soc: #2a78d6;
-  --accent: #2a78d6;
-}
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    color-scheme: dark;
-    --bg: #1a1a19; --panel: #242423; --line: #3a3a37; --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #a3a297;
-    --s-zhang: #3987e5; --s-chen: #d95926; --s-wang: #199e70; --s-guo: #c98500; --s-liu: #d55181;
-    --d-life: #008300; --d-phys: #9085e9; --d-health: #c98500; --d-soc: #3987e5;
-    --accent: #3987e5;
-  }
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.6;
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif; }
-main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 80px; }
-h1 { font-size: clamp(28px, 5vw, 42px); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 12px; font-weight: 700; }
-h2 { font-size: 22px; margin: 56px 0 8px; letter-spacing: -0.01em; }
-p { margin: 0 0 12px; max-width: 68ch; }
-.lede { font-size: 18px; color: var(--ink-2); max-width: 62ch; }
-.note { font-size: 13px; color: var(--ink-3); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line);
-  border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 28px 0 8px; }
-.tile { background: var(--bg); padding: 14px 16px; }
-.tile b { display: block; font-size: 26px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; font-weight: 650; }
-.tile span { font-size: 13px; color: var(--ink-2); }
-.tile small { display: block; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 14px 0 10px; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
-.seg button { all: unset; cursor: pointer; padding: 6px 11px; font-size: 13px; color: var(--ink-2); border-right: 1px solid var(--line); }
-.seg button:last-child { border-right: 0; }
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 600; }
-.seg button:focus-visible, select:focus-visible, th button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--ink); max-width: 240px; }
-.chart { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-svg { display: block; width: 100%; height: auto; font-family: inherit; }
-svg text { fill: var(--ink-2); font-size: 12px; }
-svg text.strong { fill: var(--ink); font-weight: 600; }
-.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink-2); margin: 6px 0; }
-.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
-#tip { position: fixed; z-index: 10; pointer-events: none; display: none; background: var(--ink); color: var(--bg); font-size: 12.5px; line-height: 1.45;
-  padding: 8px 10px; border-radius: 6px; max-width: 280px; font-variant-numeric: tabular-nums; }
-#tip b { font-weight: 650; }
-.flow { transition: opacity .12s; }
-table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
-th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; white-space: normal; }
-th { color: var(--ink-2); font-weight: 600; }
-th button { all: unset; cursor: pointer; }
-.wrap { overflow-x: auto; }
-tr.thin td { color: var(--ink-3); }
-h3 { font-size: 17px; margin: 32px 0 6px; }
-table.wrapcells td, table.wrapcells th { white-space: normal; text-align: left; vertical-align: top; }
-code { font-size: 0.92em; }
-ol.refs { padding-left: 22px; font-size: 14px; color: var(--ink-2); max-width: 78ch; }
-ol.refs li { margin-bottom: 8px; }
-a { color: var(--accent); }
-ul { padding-left: 20px; max-width: 68ch; } li { margin-bottom: 6px; }
-sup a { text-decoration: none; }
-</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-gov-dynamic-subset.min.css">
+<link rel="stylesheet" href="primitives.css">
+<link rel="stylesheet" href="semantic.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
+<a class="skip" href="#main">본문 바로가기</a>
+<header><div class="inner head"><span class="identity">성씨 비중 분석</span>
+  <button class="mode" id="mode-toggle" type="button" aria-pressed="false">고대비</button></div></header>
+<main id="main" class="inner">
   <h1>Zhang et al.은 전체 논문의 몇 %일까</h1>
   <p class="lede" id="lede"></p>
   <div class="tiles" id="tiles"></div>
   <p class="note" id="scope"></p>
+  <nav class="toc" aria-label="이 페이지의 목차"><ul>
+    <li><a href="#flow">분야의 흐름</a></li><li><a href="#series">시계열</a></li><li><a href="#why">왜 늘었나</a></li><li><a href="#fields">분야별 비중</a></li>
+    <li><a href="#growth">전체 논문 대비 증가</a></li><li><a href="#dist">분포와 power law</a></li><li><a href="#method">방법과 한계</a></li><li><a href="#references">참고문헌</a></li>
+  </ul></nav>
 
-  <h2>분야는 어떻게 흘러왔나</h2>
+  <h2 id="flow">분야는 어떻게 흘러왔나</h2>
   <p id="alluvial-text"></p>
   <div class="controls">
     <div class="seg" id="seg-corpus" role="group" aria-label="모집단 선택"></div>
@@ -90,7 +36,7 @@ sup a { text-decoration: none; }
   <div class="chart"><svg id="alluvial" role="img" aria-label="기간별 field 구성 alluvial diagram. 같은 수치는 아래 표에 있습니다."></svg></div>
   <p class="note">폭은 표본 가중 추정치입니다. 얇은 줄기는 hit 몇 건에 좌우되니 tooltip의 hit 수와 95% CI를 함께 보세요.</p>
 
-  <h2>시계열</h2>
+  <h2 id="series">시계열</h2>
   <p id="ts-text"></p>
   <div class="legend" id="legend-surname"></div>
   <p class="note">2000년 이후 3년 이동평균. 띠는 95% CI입니다.</p>
@@ -102,17 +48,42 @@ sup a { text-decoration: none; }
   <div class="legend" id="legend-coverage"></div>
   <div class="chart"><svg id="coverage" role="img" aria-label="중국 소속 저자 포함 논문 비중의 corpus 비교 선 그래프"></svg></div>
 
-  <h2>왜 늘었나</h2>
+  <h2 id="why">왜 늘었나</h2>
   <p id="why-text"></p>
   <div class="wrap"><table id="decomp-table"></table></div>
 
-  <h2>분야별 비중</h2>
+  <h2 id="fields">분야별 비중</h2>
   <p id="field-text"></p>
   <div class="controls"><div class="seg" id="seg-field-corpus" role="group" aria-label="모집단 선택"></div>
     <div class="seg" id="seg-period" role="group" aria-label="기간 선택"></div></div>
   <div class="wrap"><table id="field-table"></table></div>
 
-  <h2>분포로 보면: power law인가</h2>
+  <h2 id="growth">전체 논문 증가와 비교하면</h2>
+  <p id="growth-lede"></p>
+  <div class="tiles" id="growth-tiles"></div>
+  <h3>초과 증가율의 정의</h3>
+  <p id="growth-def"></p>
+  <h3>2000년 이후의 궤적</h3>
+  <p id="index-text"></p>
+  <div class="legend" id="legend-index"></div>
+  <div class="chart"><svg id="index-chart" role="img" aria-label="2000년을 1로 둔 전체 논문과 다섯 성 논문의 증가 지수. 수치는 아래 표에 있습니다."></svg></div>
+  <div class="wrap"><table id="surname-table"></table></div>
+  <h3>분야별 초과 증가율</h3>
+  <p id="forest-text"></p>
+  <div class="controls"><div class="seg" id="seg-forest-level" role="group" aria-label="분류 수준"></div>
+    <div class="seg" id="seg-forest-kind" role="group" aria-label="추정치 선택"></div></div>
+  <div class="chart"><svg id="forest" role="img" aria-label="분야별 초과 증가율 E와 95% CI. 수치는 아래 표에 있습니다."></svg></div>
+  <div class="wrap"><table id="growth-table"></table></div>
+  <h3>통계물리: scaling과 collapse</h3>
+  <p id="scaling-text"></p>
+  <div class="chart"><svg id="collapse" role="img" aria-label="분야×기간 셀의 관측 Y₂와 혼합 null 예측의 비교"></svg></div>
+  <p id="collapse-text"></p>
+  <h3>데이터 사이언스: 분야 차이를 무엇이 예측하나</h3>
+  <p id="predict-text"></p>
+  <div class="chart"><svg id="predict" role="img" aria-label="분야별 중국 소속 비중 변화와 초과 증가율의 산점도"></svg></div>
+  <p id="cluster-text"></p>
+
+  <h2 id="dist">분포로 보면: power law인가</h2>
   <p id="dist-lede"></p>
   <div class="tiles" id="dist-tiles"></div>
   <h3>Rank–frequency</h3>
@@ -122,6 +93,10 @@ sup a { text-decoration: none; }
   <h3>Tail 적합과 대안 분포</h3>
   <p id="fit-text"></p>
   <div class="wrap"><table id="fit-table"></table></div>
+  <h3>사전 규칙에 따른 재검정</h3>
+  <p id="retest-text"></p>
+  <div class="wrap"><table id="retest-table"></table></div>
+  <div class="wrap"><table id="snapshot-table"></table></div>
   <h3>이 검정에 그럴 힘이 있는가</h3>
   <p id="synth-text"></p>
   <div class="wrap"><table id="synth-table"></table></div>
@@ -137,13 +112,15 @@ sup a { text-decoration: none; }
   <h3>철회하거나 바꾼 잠정 진술</h3>
   <div class="wrap"><table id="life-table" class="wrapcells"></table></div>
 
-  <h2>방법과 한계</h2>
-  <div id="method"></div>
+  <h2 id="method">방법과 한계</h2>
+  <div id="method-body"></div>
 
-  <h2>참고문헌</h2>
+  <h2 id="references">참고문헌</h2>
   <ol class="refs" id="refs"></ol>
 </main>
+<footer><div class="inner">OpenAlex 기반 부수 분석. 2026-10-31 기준 데이터.</div></footer>
 <div id="tip" role="status"></div>
 <script src="app.js"></script>
+<script src="growth.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 S1: exact article counts by field x period (the stratum sizes).
 S2: a seeded uniform sample per stratum, one row per work with its first author.
 
-Output goes to data/. Each API response is cached, so a rerun
+Output goes to Data/surname_share/. Each API response is cached, so a rerun
 resumes where the last one stopped (the anonymous budget is 1000 calls a day).
 
 Usage: OPENALEX_MAILTO=you@example.org python scripts/surname_share_collect.py
@@ -28,6 +28,17 @@ PERIODS = [(y, y + 4) for y in range(1975, 2020, 5)] + [(2020, 2025)]
 SAMPLE_SIZE = 600
 PAGE_SIZE = 200
 BASE_FILTER = "type:article,authors_count:>0"
+SNAPSHOT_YEARS = [2000, 2005, 2010, 2015, 2020, 2025]
+SNAPSHOT_PAGES = 50
+POOLED_SEEDS = 3
+FIELD_PERIODS = ["2000-2004", "2005-2009", "2010-2014", "2015-2019", "2020-2025"]
+FIELD_PAGES = 3
+SUBFIELDS = {
+    "1702": "Artificial Intelligence",
+    "1707": "Computer Vision and Pattern Recognition",
+    "1705": "Computer Networks and Communications",
+    "1710": "Information Systems",
+}
 
 
 def period_label(start, end):
@@ -200,8 +211,144 @@ def s2b_core_sample(core_counts):
                     })
 
 
+def write_first_authors(writer, data, extra):
+    for work in data["results"]:
+        authors = work["authorships"]
+        first = next((a for a in authors if a["author_position"] == "first"), authors[0] if authors else None)
+        if first is None:
+            continue
+        writer.writerow({
+            **extra,
+            "work_id": work["id"].rsplit("/", 1)[-1],
+            "year": work["publication_year"],
+            "n_authors": len(authors),
+            "raw_name": first.get("raw_author_name") or "",
+            "display_name": (first.get("author") or {}).get("display_name") or "",
+            "countries": "|".join(first.get("countries") or []),
+        })
+
+
+def s2c_snapshots():
+    """Self-weighted core snapshots, so no design weights enter the frequency counts."""
+    columns = ["snapshot", "work_id", "year", "n_authors", "raw_name", "display_name", "countries"]
+    with open(OUT / "S2c_snapshots.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=columns)
+        writer.writeheader()
+        for year in SNAPSHOT_YEARS:
+            for page in range(1, SNAPSHOT_PAGES + 1):
+                data = get(
+                    {
+                        "filter": f"{period_filter(year, year)},primary_location.source.is_core:true",
+                        "sample": SNAPSHOT_PAGES * PAGE_SIZE,
+                        "seed": year,
+                        "per-page": PAGE_SIZE,
+                        "page": page,
+                        "select": "id,publication_year,authorships",
+                    },
+                    f"S2c_{year}_{page}",
+                )
+                write_first_authors(writer, data, {"snapshot": year})
+
+
+def s2d_pooled():
+    """One self-weighted stratum over 2000-2025, drawn under several seeds to pass the 10,000 cap."""
+    columns = ["seed", "work_id", "year", "n_authors", "raw_name", "display_name", "countries"]
+    with open(OUT / "S2d_pooled.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=columns)
+        writer.writeheader()
+        for seed in range(1, POOLED_SEEDS + 1):
+            for page in range(1, SNAPSHOT_PAGES + 1):
+                data = get(
+                    {
+                        "filter": f"{BASE_FILTER},from_publication_date:2000-01-01,to_publication_date:2025-12-31,"
+                                  "primary_location.source.is_core:true",
+                        "sample": SNAPSHOT_PAGES * PAGE_SIZE,
+                        "seed": seed,
+                        "per-page": PAGE_SIZE,
+                        "page": page,
+                        "select": "id,publication_year,authorships",
+                    },
+                    f"S2d_{seed}_{page}",
+                )
+                write_first_authors(writer, data, {"seed": seed})
+
+
+def field_strata():
+    with open(OUT / "S1_strata.csv", encoding="utf-8") as f:
+        fields = {row["field_id"]: row["field"] for row in csv.DictReader(f)}
+    strata = [("field", key, name) for key, name in sorted(fields.items(), key=lambda kv: int(kv[0]))]
+    return strata + [("subfield", key, name) for key, name in SUBFIELDS.items()]
+
+
+def stratum_filter(level, key):
+    return f"primary_topic.{level}.id:{key}"
+
+
+def s1c_field_series():
+    """Exact yearly totals in core sources by field, and those with a China-affiliated author."""
+    base = f"{period_filter(2000, 2025)},primary_location.source.is_core:true"
+    with open(OUT / "S1c_field_series.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["level", "key", "name", "year", "n_articles", "n_china"])
+        for level, key, name in field_strata():
+            totals = get({"filter": f"{base},{stratum_filter(level, key)}", "group_by": "publication_year", "per-page": 40},
+                         f"S1c_{level}_{key}_all")
+            china = get({"filter": f"{base},{stratum_filter(level, key)},authorships.countries:countries/cn",
+                         "group_by": "publication_year", "per-page": 40}, f"S1c_{level}_{key}_cn")
+            china_by_year = {g["key"]: g["count"] for g in china["group_by"]}
+            for group in sorted(totals["group_by"], key=lambda g: g["key"]):
+                writer.writerow([level, key, name, group["key"], group["count"], china_by_year.get(group["key"], 0)])
+
+
+def s2e_field_sample():
+    """First authors by field or subfield x period in core sources."""
+    with open(OUT / "S1c_field_series.csv", encoding="utf-8") as f:
+        sizes = {}
+        for row in csv.DictReader(f):
+            year = int(row["year"])
+            period = FIELD_PERIODS[min((year - 2000) // 5, len(FIELD_PERIODS) - 1)]
+            cell = (row["level"], row["key"], period)
+            sizes[cell] = sizes.get(cell, 0) + int(row["n_articles"])
+    columns = ["level", "key", "name", "period", "n_stratum", "work_id", "year", "n_authors", "raw_name", "display_name", "countries"]
+    with open(OUT / "S2e_field_sample.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=columns)
+        writer.writeheader()
+        for level, key, name in field_strata():
+            for period in FIELD_PERIODS:
+                start, end = (int(x) for x in period.split("-"))
+                n_stratum = sizes.get((level, key, period), 0)
+                size = min(FIELD_PAGES * PAGE_SIZE, n_stratum)
+                for page in range(1, (size + PAGE_SIZE - 1) // PAGE_SIZE + 1):
+                    data = get(
+                        {
+                            "filter": f"{period_filter(start, end)},primary_location.source.is_core:true,{stratum_filter(level, key)}",
+                            "sample": size,
+                            "seed": start * 10 + int(key) % 997,
+                            "per-page": PAGE_SIZE,
+                            "page": page,
+                            "select": "id,publication_year,authorships",
+                        },
+                        f"S2e_{level}_{key}_{start}_{page}",
+                    )
+                    write_first_authors(writer, data, {"level": level, "key": key, "name": name, "period": period, "n_stratum": n_stratum})
+
+
 if __name__ == "__main__":
     CACHE.mkdir(parents=True, exist_ok=True)
+    if "--fields" in sys.argv:
+        s1c_field_series()
+        print("S1c done", flush=True)
+        s2e_field_sample()
+        print("S2e done", flush=True)
+        sys.exit(0)
+    if "--pooled" in sys.argv:
+        s2d_pooled()
+        print("S2d done", flush=True)
+        sys.exit(0)
+    if "--snapshots" in sys.argv:
+        s2c_snapshots()
+        print("S2c done", flush=True)
+        sys.exit(0)
     strata = s1_strata()
     print(f"S1 strata: {len(strata)}", flush=True)
     s2_sample(strata)

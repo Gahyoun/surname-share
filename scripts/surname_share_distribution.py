@@ -7,7 +7,7 @@ S8:  synthetic validation of the power-law pipeline at the empirical sample size
 S9:  tail fits: discrete power law (Clauset et al.), goodness of fit, Vuong LR tests.
 S10: surname concentration over time: inverse participation ratio, Hill numbers,
      and the two-population mixture null.
-S11: write docs/distribution.json for the page.
+S11: write docs/surname-share/distribution.json for the page.
 
 Usage: python scripts/surname_share_distribution.py [--quick]
 """
@@ -244,15 +244,18 @@ def sample_counts(rng, probabilities, n):
     return counts[counts > 0].astype(np.int64)
 
 
-def population(kind, rng, alpha, china, pi, y_other):
+def population(kind, rng, alpha, china, pi, y_other, names=300000):
+    """Rival populations. `names` must stay well above n, or the rare names saturate
+    and even a true power law fails the test at large n."""
+    spread = np.sqrt(np.log(y_other * names))
     if kind == "power":
-        size = rng.pareto(alpha - 1, 60000) + 1
+        size = rng.pareto(alpha - 1, names) + 1
     elif kind == "lognormal":
-        size = rng.lognormal(0, np.sqrt(np.log(y_other * 60000)), 60000)
+        size = rng.lognormal(0, spread, names)
     else:
         # Mixture null: measured Chinese surname frequencies plus a lognormal
         # population calibrated to the measured non-China collision probability.
-        broad = rng.lognormal(0, np.sqrt(np.log(y_other * 60000)), 60000)
+        broad = rng.lognormal(0, spread, names)
         size = np.concatenate([pi * china / china.sum(), (1 - pi) * broad / broad.sum()])
     return size / size.sum()
 
@@ -474,7 +477,40 @@ def s10_concentration(core):
     return frame.to_dict("records"), annual.to_dict("records"), summary
 
 
+def s8b_power():
+    """How large must n be for the tail tests to separate the rival populations?"""
+    global N_SYNTH_GOF
+    N_SYNTH_GOF = 19 if QUICK else 49
+    core = pd.read_csv(OUT / "S7_clean_core.csv", keep_default_na=False, dtype={"work_id": str})
+    core["china"] = core.countries.str.split("|").map(lambda c: "CN" in c)
+    core["known"] = core.countries != ""
+    known = core[(core.year >= 2000) & core.known]
+    china = frequencies(known[known.china]).astype(float)
+    pi, y_other, alpha = 0.18, 0.00032, 2.23
+    reps = 8 if QUICK else 60
+    jobs = [(kind, n, alpha, china, pi, y_other, SEED + 1000 * n + i)
+            for n in (15620, 60000, 120000, 180000) for kind in ("power", "lognormal", "mixture") for i in range(reps)]
+    with ProcessPoolExecutor() as pool:
+        rows = []
+        for job, row in zip(jobs, pool.map(synth_one, jobs)):
+            if row:
+                rows.append({**row, "n": job[1]})
+    frame = pd.DataFrame(rows)
+    path = OUT / "S8b_power.csv"
+    frame.to_csv(path, index=False)
+    step("S8b_power", len(jobs), len(frame), path)
+    frame["reject"] = frame.gof_p < 0.1
+    frame["cutoff"] = frame.cutoff_p < 0.1
+    frame["lognormal"] = (frame.R < 0) & (frame.R_p < 0.1)
+    print(frame.groupby(["n", "kind"]).agg(reps=("alpha", "size"), alpha=("alpha", "median"), n_tail=("n_tail", "median"),
+                                           reject=("reject", "mean"), cutoff=("cutoff", "mean"),
+                                           lognormal=("lognormal", "mean")).round(3).to_string())
+
+
 def main():
+    if "--power" in sys.argv:
+        s8b_power()
+        return
     core, full = load()
     recent = core[core.year >= 2000]
     known = recent[recent.known]
