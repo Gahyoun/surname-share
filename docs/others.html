@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko" data-krds-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>인도·한국 소속 성씨</title>
+<meta name="description" content="OpenAlex core 표본으로 추정한 인도·한국 소속에 흔한 성씨의 제1저자 비중 변화와 전체 논문 대비 초과 증가">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-gov-dynamic-subset.min.css">
+<link rel="stylesheet" href="primitives.css">
+<link rel="stylesheet" href="semantic.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">본문 바로가기</a>
+<header><div class="inner head"><span class="identity">성씨 비중 분석</span>
+  <button class="mode" id="mode-toggle" type="button" aria-pressed="false">고대비</button></div></header>
+<main id="main" class="inner">
+  <p class="note"><a href="index.html">← Zhang et al. 분석으로 돌아가기</a></p>
+  <h1>인도·한국 소속에 흔한 성씨는 얼마나 늘었을까</h1>
+  <p class="lede" id="lede"></p>
+  <div class="tiles" id="tiles"></div>
+  <p class="note" id="scope"></p>
+  <nav class="toc" aria-label="이 페이지의 목차"><ul>
+    <li><a href="#define">측정 방법</a></li><li><a href="#trend">시계열</a></li><li><a href="#null">소속 규모로 설명되는가</a></li>
+    <li><a href="#validity">측정의 비교 가능성</a></li><li><a href="#fields">분야별 차이</a></li><li><a href="#surnames">성씨별 값</a></li><li><a href="#limits">방법과 한계</a></li><li><a href="#related">관련 연구</a></li>
+  </ul></nav>
+
+  <h2 id="define">측정 방법</h2>
+  <p id="define-text"></p>
+  <div class="wrap"><table id="set-table"></table></div>
+
+  <h2 id="trend">시계열</h2>
+  <p id="trend-text"></p>
+  <div class="legend" id="legend-trend"></div>
+  <div class="chart"><svg id="trend-chart" role="img" aria-label="2000년을 1로 놓은 성씨 비중과 소속 비중의 변화. 수치는 아래 표에 있습니다."></svg></div>
+  <div class="wrap"><table id="trend-table"></table></div>
+
+  <h2 id="null">소속 규모로 설명되는가</h2>
+  <p id="null-text"></p>
+  <div class="wrap"><table id="null-table"></table></div>
+  <h3>비중 변화의 분해</h3>
+  <p id="shift-text"></p>
+  <div class="wrap"><table id="shift-table"></table></div>
+
+  <h2 id="validity">측정의 비교 가능성</h2>
+  <p id="validity-text"></p>
+  <h3>성씨 집합은 소속을 얼마나 대리하는가</h3>
+  <p id="proxy-text"></p>
+  <div class="wrap"><table id="proxy-table"></table></div>
+  <h3>시기를 나누면</h3>
+  <p id="period-text"></p>
+  <div class="wrap"><table id="period-table"></table></div>
+  <h3>팀 규모별 차이</h3>
+  <p id="team-text"></p>
+  <div class="wrap"><table id="team-table"></table></div>
+  <h3>경쟁 설명 점검</h3>
+  <p>E의 변화를 만들 수 있는 경쟁 설명을 수집된 표본으로 점검했습니다. 아래 두 행은 현재 자료로 검정할 수 없는 설명입니다.</p>
+  <div class="wrap"><table class="wrapcells" id="rival-table"></table></div>
+
+  <h2 id="fields">분야별 차이</h2>
+  <p id="field-text"></p>
+  <div class="controls"><div class="seg" id="seg-country" role="group" aria-label="국가 선택"></div></div>
+  <div class="chart"><svg id="forest" role="img" aria-label="분야별 초과 증가율과 95% CI. 수치는 아래 표에 있습니다."></svg></div>
+  <div class="wrap"><table id="field-table"></table></div>
+
+  <h2 id="surnames">성씨별 값</h2>
+  <p id="surname-text"></p>
+  <div class="wrap"><table id="surname-table"></table></div>
+
+  <h2 id="limits">방법과 한계</h2>
+  <ul id="limits-body"></ul>
+
+  <h2 id="related">관련 연구</h2>
+  <p>성씨로 연구자의 출신을 근사하는 방법은 서지계량학과 노동경제학에서 오래 쓰여 왔습니다. 다만 아래 연구는 대부분 특정 국가 안의 저자 구성이나 협업, 이름 식별 오류를 다룹니다. 세계 전체 제1저자에서 특정 성씨 집단의 비중이 전체 논문보다 얼마나 빠르게 늘었는지를 같은 지표로 비교한 연구는 찾지 못했습니다.</p>
+  <ol class="refs" id="refs"></ol>
+</main>
+<footer><div class="inner">OpenAlex 데이터 기반 분석. 2026-10-31 기준.</div></footer>
+<div id="tip" role="status"></div>
+<script src="others.js"></script>
+</body>
+</html>
