@@ -40,6 +40,8 @@
 | Liu | 0.90% | 1.47% | 0.78% |
 | **다섯 성 합계** | **4.58%** | **7.49%** | **4.07%** |
 
+위 표는 층화 표본 추정치입니다. 페이지의 분야별 비중 표는 OpenAlex 스냅샷을 전수 집계한 값으로, xpac 레코드를 뺀 전체 OpenAlex 기준 다섯 성 합계는 전체 기간 3.86%, 2020–25년 4.23%이고 core 기준은 4.49%, 7.73%입니다. 전체 OpenAlex에서 표본 추정치(전체 기간 4.07%, 2020–25년 4.82%)는 전수값보다 다소 높고, 전수값은 표본 CI 하단 바로 아래에 있습니다. 분야별 셀 156개 중 88%(2020–25년), 92%(전체 기간)에서 전수값이 표본 CI 안에 들었습니다.
+
 ### 성씨 집합별 초과 증가율
 
 E는 2000년에서 2025년 사이에 성씨 집합의 비중이 몇 배가 되었는지를 나타내며, 전체 논문보다 몇 배 빠르게 늘었는지와 같은 값입니다. E=1이면 전체 논문과 같은 속도입니다. 같은 기간 core 전체 논문은 약 3.3배 늘었습니다.
@@ -84,6 +86,7 @@ data/       원자료와 단계별 산출물 (커밋하지 않음, 실행하면 
 | `surname_share_common.py` | S23–S26 | 중국 소속 성씨 집합의 E | `common.json` |
 | `surname_share_others.py` | S27–S31 | 인도·한국 소속 성씨 집합의 E | `others.json` |
 | `surname_share_validity.py` | S32–S38 | 측정 타당성 점검 | `validity.json` |
+| `surname_share_census.py` | S30, S39 | OpenAlex 스냅샷 전수 집계, 분야별 비중 | `census.json` |
 
 모든 처리는 번호가 붙은 단계로 나뉘고, 남긴 행과 제외한 행이 함께 저장되며, `data/STEP_LOG.csv`에 입력과 출력 행 수가 기록됩니다.
 
@@ -99,6 +102,8 @@ OpenAlex는 제1저자 성씨로 직접 거르는 기능을 제공하지 않습�
 | S2c | 2000·2005·2010·2015·2020·2025년 표본, 시점당 약 1만 건 | E 측정 |
 | S2d | 2000–2025년 pooled 표본, 약 3만 건 | 성씨 목록 선정, 꼬리 분석 |
 | S2e | field×기간 셀당 600건, 총 약 9만 건 | 분야별 E |
+
+분야별 비중 표만은 표본이 아니라 OpenAlex parquet 스냅샷(2026-10-14 릴리스, 464,765,485건)을 전수 집계합니다. 필요한 열만 범위 요청으로 읽어 article 192,176,394편을 추렸고, API 기본 조회에서 빠지는 xpac 24,760,538편을 제외했습니다. 남은 167,415,856편 중 field가 지정되지 않은 2,422,190편은 표에서 뺐습니다. Field가 있는 논문 수는 API 집계 161,229,807편보다 2.3% 많습니다.
 
 성씨 목록을 뽑는 표본(S2d)과 증가율을 재는 표본(S2c, S2e)을 분리한 이유는, 표본 잡음 때문에 우연히 많이 뽑힌 성씨가 "많이 늘어난 성씨"로 측정되는 선택 효과를 막기 위해서입니다. 분야는 논문의 `primary_topic`에서 가져오며, OpenAlex의 상위 분류 26개 field를 사용합니다. ML은 독립 field가 아니므로 Artificial Intelligence와 Computer Vision and Pattern Recognition 두 subfield를 합쳐 근사합니다.
 
@@ -425,6 +430,13 @@ python scripts/surname_share_fields.py
 python scripts/surname_share_common.py
 python scripts/surname_share_others.py
 python scripts/surname_share_validity.py
+```
+
+분야별 비중의 전수 집계는 `pyarrow`가 필요하며 약 2–3시간 걸립니다. `CENSUS_DIR`에는 동기화되지 않는 폴더를 지정하세요.
+
+```bash
+CENSUS_DIR=/path/to/census python scripts/surname_share_census.py extract --workers 10
+CENSUS_DIR=/path/to/census python scripts/surname_share_census.py tabulate --workers 8
 ```
 
 `distribution`과 `retest`는 부트스트랩 때문에 오래 걸립니다. 동작만 확인할 때는 `--quick`을 붙이면 반복 수를 줄입니다. 이때 결과 JSON도 축소된 반복 수의 값으로 바뀌므로, 공개용 값은 `--quick` 없이 다시 실행해 만들어야 합니다.
