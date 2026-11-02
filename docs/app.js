@@ -29,8 +29,8 @@ function showTip(event, html) {
   tip.innerHTML = html;
   tip.style.display = 'block';
   const r = tip.getBoundingClientRect();
-  tip.style.left = `${Math.min(event.clientX + 14, innerWidth - r.width - 8)}px`;
-  tip.style.top = `${Math.min(event.clientY + 14, innerHeight - r.height - 8)}px`;
+  tip.style.left = `${Math.max(8, Math.min(event.clientX + 14, innerWidth - r.width - 8))}px`;
+  tip.style.top = `${Math.max(8, Math.min(event.clientY + 14, innerHeight - r.height - 8))}px`;
 }
 const hideTip = () => { tip.style.display = 'none'; };
 
@@ -189,12 +189,32 @@ function lineChart(svg, { series, W = 1000, H = 400, tip: tipText, tick, format,
     el('text', { x: m.l - 7, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = format ? format(v) : `${(v * 100).toFixed(tick < 0.01 ? 1 : 0)}%`;
   }
   years.filter(v => v % 5 === 0).forEach(v => { el('text', { x: x(v), y: H - 8, 'text-anchor': 'middle' }, svg).textContent = v; });
-  series.forEach(s => {
+  const patterns = ['none', '7 4', '2 4', '10 4 2 4', '3 3', '12 3'];
+  const markers = ['●', '■', '◆', '▲', '×', '○'];
+  const legendIds = { lines: 'legend-surname', coverage: 'legend-coverage', 'index-chart': 'legend-index', 'common-chart': 'legend-common' };
+  const keys = $(legendIds[svg.id])?.querySelectorAll('i') || [];
+  series.forEach((s, i) => {
     if (s.rows[0].lo !== undefined) {
       const band = [...s.rows.map(r => `${x(r.year)},${y(r.hi)}`), ...s.rows.slice().reverse().map(r => `${x(r.year)},${y(r.lo)}`)].join(' ');
       el('polygon', { points: band, fill: css(s.color), 'fill-opacity': 0.1 }, svg);
     }
-    el('path', { d: `M${s.rows.map(r => `${x(r.year)},${y(r.share)}`).join('L')}`, fill: 'none', stroke: css(s.color), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dash || 'none' }, svg);
+    el('path', { d: `M${s.rows.map(r => `${x(r.year)},${y(r.share)}`).join('L')}`, fill: 'none', stroke: css(s.color), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dash || patterns[i % patterns.length] }, svg);
+    s.rows.filter((r, k) => r.year % 5 === 0 || k === 0 || k === s.rows.length - 1).forEach(r => {
+      const attrs = { fill: css(s.color), 'aria-hidden': 'true', 'pointer-events': 'none' };
+      const cx = x(r.year), cy = y(r.share), shape = i % markers.length;
+      if (shape === 0) el('circle', { ...attrs, cx, cy, r: 3 }, svg);
+      else if (shape === 1) el('rect', { ...attrs, x: cx - 3, y: cy - 3, width: 6, height: 6 }, svg);
+      else if (shape === 2) el('path', { ...attrs, d: `M${cx},${cy - 4}l4,4l-4,4l-4,-4Z` }, svg);
+      else if (shape === 3) el('path', { ...attrs, d: `M${cx},${cy - 4}l4,7h-8Z` }, svg);
+      else if (shape === 4) el('path', { ...attrs, fill: 'none', stroke: css(s.color), 'stroke-width': 2, d: `M${cx - 3},${cy - 3}l6,6m0,-6l-6,6` }, svg);
+      else el('circle', { ...attrs, cx, cy, r: 3, fill: css('--gk-bg'), stroke: css(s.color), 'stroke-width': 2 }, svg);
+    });
+    if (keys[i]) {
+      keys[i].className = 'series-marker';
+      keys[i].textContent = markers[i % markers.length];
+      keys[i].style.cssText = `color:var(${s.color});background:none;border:0`;
+      keys[i].setAttribute('aria-hidden', 'true');
+    }
   });
   const labels = series.map(s => ({ s: s.label, y: y(s.rows.at(-1).share) + 4 })).sort((a, b) => a.y - b.y);
   labels.forEach((l, i) => { if (i && l.y - labels[i - 1].y < 18) l.y = labels[i - 1].y + 18; });
@@ -209,6 +229,32 @@ function lineChart(svg, { series, W = 1000, H = 400, tip: tipText, tick, format,
     showTip(event, tipText(year));
   });
   hit.addEventListener('mouseleave', () => { hideTip(); cross.setAttribute('visibility', 'hidden'); });
+  svg.setAttribute('tabindex', '0');
+  svg.setAttribute('aria-describedby', 'chart-keyboard-help');
+  let keyboardIndex = 0;
+  const showKeyboardYear = () => {
+    const year = years[keyboardIndex], box = svg.getBoundingClientRect();
+    cross.setAttribute('x1', x(year)); cross.setAttribute('x2', x(year)); cross.setAttribute('visibility', 'visible');
+    const region = svg.closest('.chart');
+    if (region) {
+      const bounds = region.getBoundingClientRect(), point = box.left + x(year) * box.width / W;
+      if (point < bounds.left + 24) region.scrollLeft += point - bounds.left - 24;
+      else if (point > bounds.right - 24) region.scrollLeft += point - bounds.right + 24;
+    }
+    const visibleBox = svg.getBoundingClientRect();
+    showTip({ clientX: visibleBox.left + x(year) * visibleBox.width / W, clientY: Math.max(visibleBox.top, 8) }, tipText(year));
+  };
+  svg.onfocus = showKeyboardYear;
+  svg.onblur = () => { hideTip(); cross.setAttribute('visibility', 'hidden'); };
+  svg.onkeydown = event => {
+    if (event.key === 'Escape') { hideTip(); cross.setAttribute('visibility', 'hidden'); return; }
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === 'Home') keyboardIndex = 0;
+    else if (event.key === 'End') keyboardIndex = years.length - 1;
+    else keyboardIndex = Math.max(0, Math.min(years.length - 1, keyboardIndex + (event.key === 'ArrowRight' ? 1 : -1)));
+    showKeyboardYear();
+  };
 }
 
 let drawLines = () => {};
@@ -477,3 +523,4 @@ const REFS = [
   'Chao, A., &amp; Shen, T.-J. (2003). Nonparametric estimation of Shannon’s index of diversity when there are unseen species in sample. <em>Environmental and Ecological Statistics</em>, 10, 429–443. <a href="https://doi.org/10.1023/A:1026096204727">DOI</a>',
   'Hill, M. O. (1973). Diversity and evenness: A unifying notation and its consequences. <em>Ecology</em>, 54(2), 427–432. <a href="https://doi.org/10.2307/1934352">DOI</a>',
 ];
+

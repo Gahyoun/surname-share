@@ -123,3 +123,91 @@ table.wrapcells td, table.wrapcells th { white-space: normal; text-align: left; 
 ol.refs { padding-left: var(--krds-number-9); font-size: var(--krds-typo-body-small); word-break: normal; overflow-wrap: normal; }
 ol.refs a { white-space: nowrap; }
 footer { border-top: var(--krds-number-1) solid var(--gk-border-light); padding: var(--krds-number-10) 0; font-size: var(--krds-typo-body-small); color: var(--gk-text-subtle); }
+
+/* Site-local white/navy theme. Keep generated KRDS tokens and high contrast intact. */
+:root[data-krds-mode="light"] {
+  --gk-bg: #ffffff;
+  --gk-surface: #ffffff;
+  --gk-bg-sunken: #f3f5f8;
+  --gk-surface-raised: #f3f5f8;
+  --gk-surface-primary: #d9d5f5;
+  --gk-text: #202c3e;
+  --gk-text-bolder: #172d4d;
+  --gk-text-subtle: #475569;
+  --gk-link: #244d82;
+  --gk-link-hover: #172d4d;
+  --gk-link-pressed: #172d4d;
+  --gk-border-primary: #244d82;
+  --gk-selected: #233b5c;
+}
+:root {
+  --gap-title: 1.6rem;
+  --gap-h2: 6.4rem;
+  --gap-h2-h3: 3.2rem;
+}
+body { font-size: 1.8rem; line-height: 1.75; }
+main.inner { padding-top: 4rem; padding-bottom: 5.6rem; }
+.head { min-height: 8.2rem; }
+.identity { font-size: 2.3rem; }
+.identity::before { display: none; }
+.lede { font-size: 1.8rem; line-height: 1.8; }
+.note, .legend, table, ol.refs, footer { font-size: 1.5rem; }
+.note, ol.refs { line-height: 1.8; }
+.tiles { gap: 1.6rem; }
+.tile { display: flex; flex-direction: column; gap: .6rem; min-width: 0; padding: 2.2rem 2rem; }
+.tile span { font-size: 1.6rem; line-height: 1.6; }
+.tile b { font-size: 4rem; line-height: 1.4; }
+.tile small { font-size: 1.4rem; line-height: 1.7; }
+.mode, .seg button, select, th button { min-width: 4.4rem; min-height: 4.4rem; font-size: 1.6rem; }
+.mode, select { height: auto; }
+.mode { padding: .8rem 1.8rem; }
+select { padding: .8rem 1.2rem; }
+.seg { max-width: 100%; }
+.seg button { padding: .8rem 1.4rem; }
+.toc { margin: 3.2rem 0; padding: 2rem; }
+.toc ul { gap: .4rem 1.2rem; }
+.toc a { display: inline-flex; align-items: center; min-height: 4.4rem; padding: .7rem .6rem; border-radius: .4rem; }
+.toc a[aria-current="location"] { color: var(--gk-text-bolder); background: var(--gk-surface); font-weight: 700; text-decoration-thickness: .2rem; }
+:focus-visible { outline: .3rem solid var(--gk-border-primary); outline-offset: .3rem; box-shadow: none; }
+.seg button:focus-visible, th button:focus-visible { outline: 0; box-shadow: inset 0 0 0 .3rem var(--gk-border-primary); }
+svg:focus-visible { outline-offset: -.3rem; }
+.chart, .wrap { overscroll-behavior-inline: contain; scrollbar-color: var(--gk-border) var(--gk-bg); scrollbar-width: thin; }
+.chart svg { min-width: 100rem !important; }
+.wrap table { min-width: 76rem; }
+.chart[data-scrollable]::before, .wrap[data-scrollable]::before {
+  display: block; position: sticky; left: 0; width: fit-content; max-width: 100%;
+  margin-bottom: .8rem; color: var(--gk-text-subtle); font-size: 1.4rem; line-height: 1.7;
+}
+.chart[data-scrollable]::before { content: "좌우로 움직여 그래프 전체 보기"; }
+.wrap[data-scrollable]::before { content: "좌우로 움직여 표의 모든 열 보기"; }
+th, td { padding: 1.4rem 1.6rem; }
+th { background: var(--gk-bg-sunken); }
+tr:nth-child(even) td { background-color: var(--gk-surface-raised); }
+th button { padding: .4rem .6rem; }
+.legend .series-marker { width: 1.8rem; height: 1.8rem; font-size: 1.6rem; line-height: 1; text-align: center; vertical-align: -.1rem; }
+#tip { max-width: min(32rem, calc(100vw - 1.6rem)); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (max-width: 767px) {
+  body { font-size: 1.6rem; }
+  main.inner { padding-top: 2.8rem; padding-bottom: 4rem; }
+  .head { min-height: 7.6rem; }
+  .identity { font-size: 1.9rem; }
+  .lede { font-size: 1.6rem; line-height: 1.75; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile { padding: 1.8rem 1.6rem; }
+  .tile span, .note, .legend, table, ol.refs, footer { font-size: 1.4rem; }
+  .tile b { font-size: 3.2rem; }
+  .toc { padding: 1.6rem; }
+  .toc li { font-size: 1.5rem; }
+  .controls { gap: 1.2rem; }
+  .legend { gap: .8rem 1.6rem; }
+  ol.refs a { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow { transition: none; }
+}
+@media (forced-colors: active) {
+  :focus-visible { outline-color: Highlight; }
+  .seg button[aria-pressed="true"] { outline: .2rem solid Highlight; outline-offset: -.2rem; }
+}
+
