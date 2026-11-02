@@ -211,3 +211,44 @@ th button { padding: .4rem .6rem; }
   .seg button[aria-pressed="true"] { outline: .2rem solid Highlight; outline-offset: -.2rem; }
 }
 
+
+/* Left contents rail: 224px navigation + 48px gap + up to 1200px article. */
+.toc-title { margin: 0 0 1.6rem; color: var(--gk-text-bolder); font-size: 1.6rem; font-weight: 700; line-height: 1.6; }
+@media (min-width: 1280px) {
+  .has-floating-toc {
+    --toc-width: 22.4rem;
+    --toc-gap: 4.8rem;
+    --reading-shell: calc(var(--krds-contents-size-max) + var(--toc-width) + var(--toc-gap));
+  }
+  .has-floating-toc .inner { max-width: calc(var(--reading-shell) + 2 * var(--margin)); }
+  .has-floating-toc main.inner,
+  .has-floating-toc footer .inner { padding-left: calc(var(--margin) + var(--toc-width) + var(--toc-gap)); }
+  .has-floating-toc .toc {
+    position: fixed;
+    z-index: 2;
+    top: 12.3rem;
+    left: max(var(--margin), calc((100% - var(--reading-shell)) / 2));
+    width: var(--toc-width);
+    max-height: calc(100vh - 14.7rem);
+    max-height: calc(100dvh - 14.7rem);
+    margin: 0;
+    padding: 2rem;
+    overflow-y: auto;
+    border: .1rem solid var(--gk-border-light);
+    border-radius: 1.2rem;
+    background: var(--gk-surface);
+    scrollbar-width: thin;
+  }
+  .has-floating-toc .toc ul { flex-direction: column; flex-wrap: nowrap; gap: .4rem; }
+  .has-floating-toc .toc li { font-size: 1.5rem; }
+  .has-floating-toc .toc a {
+    display: flex;
+    width: 100%;
+    padding: 1rem 1.2rem;
+    color: var(--gk-text-bolder);
+    line-height: 1.6;
+    text-decoration: none;
+  }
+  .has-floating-toc .toc a:hover,
+  .has-floating-toc .toc a[aria-current="location"] { background: var(--gk-bg-sunken); }
+}

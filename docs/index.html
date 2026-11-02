@@ -8,9 +8,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-gov-dynamic-subset.min.css">
 <link rel="stylesheet" href="primitives.css">
 <link rel="stylesheet" href="semantic.css">
-<link rel="stylesheet" href="style.css?v=20261102-ef62e00">
+<link rel="stylesheet" href="style.css?v=20261103-left-toc">
 </head>
-<body>
+<body class="has-floating-toc">
 <a class="skip" href="#main">본문 바로가기</a>
 <header><div class="inner head"><span class="identity">성씨 비중 분석</span>
   <button class="mode" id="mode-toggle" type="button" aria-pressed="false">고대비</button></div></header>
@@ -19,7 +19,9 @@
   <p class="lede" id="lede"></p>
   <div class="tiles" id="tiles"></div>
   <p class="note" id="scope"></p>
-  <nav class="toc" aria-label="이 페이지의 목차"><ul>
+  <nav class="toc" aria-label="이 페이지의 목차">
+    <p class="toc-title">이 페이지의 목차</p>
+    <ul>
     <li><a href="#flow">분야의 흐름</a></li><li><a href="#series">시계열</a></li><li><a href="#why">왜 늘었나</a></li><li><a href="#fields">분야별 비중</a></li>
     <li><a href="#growth">전체 논문 대비 증가</a></li><li><a href="#chinese">중국 소속에 흔한 성씨</a></li><li><a href="others.html">인도·한국 소속 성씨</a></li><li><a href="#dist">분포와 power law</a></li><li><a href="#method">방법과 한계</a></li><li><a href="#references">참고문헌</a></li>
   </ul></nav>
